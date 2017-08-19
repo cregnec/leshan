@@ -109,6 +109,7 @@ public class LeshanServer implements LwM2mServer {
      * @param dtlsConfig the DTLS configuration : {@link DtlsConnectorConfig}.
      */
     public LeshanServer(InetSocketAddress localAddress, CaliforniumRegistrationStore registrationStore,
+            RegistrationServiceImpl registrationService, ObservationServiceImpl observationService,
             SecurityStore securityStore, Authorizer authorizer, LwM2mModelProvider modelProvider,
             LwM2mNodeEncoder encoder, LwM2mNodeDecoder decoder, NetworkConfig coapConfig,
             DtlsConnectorConfig dtlsConfig) {
@@ -122,9 +123,9 @@ public class LeshanServer implements LwM2mServer {
 
         // Init services and stores
         this.registrationStore = registrationStore;
-        this.registrationService = new RegistrationServiceImpl(registrationStore);
+        this.registrationService = registrationService;
         this.securityStore = securityStore;
-        this.observationService = new ObservationServiceImpl(registrationStore, modelProvider, decoder);
+        this.observationService = observationService;
         this.modelProvider = modelProvider;
 
         // Cancel observations on client unregistering

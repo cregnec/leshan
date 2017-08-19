@@ -36,10 +36,14 @@ import org.eclipse.leshan.server.LwM2mServer;
 import org.eclipse.leshan.server.californium.impl.InMemoryRegistrationStore;
 import org.eclipse.leshan.server.californium.impl.LeshanServer;
 import org.eclipse.leshan.server.californium.impl.LwM2mPskStore;
+import org.eclipse.leshan.server.californium.impl.ObservationServiceImpl;
 import org.eclipse.leshan.server.impl.InMemorySecurityStore;
+import org.eclipse.leshan.server.impl.RegistrationServiceImpl;
 import org.eclipse.leshan.server.model.LwM2mModelProvider;
 import org.eclipse.leshan.server.model.StandardModelProvider;
+import org.eclipse.leshan.server.observation.ObservationService;
 import org.eclipse.leshan.server.registration.Registration;
+import org.eclipse.leshan.server.registration.RegistrationService;
 import org.eclipse.leshan.server.registration.RegistrationStore;
 import org.eclipse.leshan.server.security.Authorizer;
 import org.eclipse.leshan.server.security.DefaultAuthorizer;
@@ -58,6 +62,8 @@ public class LeshanServerBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(LeshanServerBuilder.class);
 
     private CaliforniumRegistrationStore registrationStore;
+    private RegistrationServiceImpl registrationService;
+    private ObservationServiceImpl observationService;
     private SecurityStore securityStore;
     private LwM2mModelProvider modelProvider;
     private Authorizer authorizer;
@@ -149,6 +155,28 @@ public class LeshanServerBuilder {
      */
     public LeshanServerBuilder setRegistrationStore(CaliforniumRegistrationStore registrationStore) {
         this.registrationStore = registrationStore;
+        return this;
+    }
+
+    /**
+     * <p>
+     * Set your {@link RegistrationService}
+     * </p>
+     * 
+     */
+    public LeshanServerBuilder setRegistrationService(RegistrationServiceImpl registrationService) {
+        this.registrationService = registrationService;
+        return this;
+    }
+
+    /**
+     * <p>
+     * Set your {@link ObservationService}
+     * </p>
+     * 
+     */
+    public LeshanServerBuilder setObservationService(ObservationServiceImpl observationService) {
+        this.observationService = observationService;
         return this;
     }
 
@@ -273,6 +301,8 @@ public class LeshanServerBuilder {
             localAddress = new InetSocketAddress(LwM2m.DEFAULT_COAP_PORT);
         if (registrationStore == null)
             registrationStore = new InMemoryRegistrationStore();
+        if (registrationService == null)
+            registrationService = new RegistrationServiceImpl(registrationStore);
         if (authorizer == null)
             authorizer = new DefaultAuthorizer(securityStore);
         if (modelProvider == null)
@@ -281,6 +311,8 @@ public class LeshanServerBuilder {
             encoder = new DefaultLwM2mNodeEncoder();
         if (decoder == null)
             decoder = new DefaultLwM2mNodeDecoder();
+        if (observationService == null)
+            observationService = new ObservationServiceImpl(registrationStore, modelProvider, decoder);
         if (coapConfig == null) {
             coapConfig = new NetworkConfig();
             coapConfig.set(NetworkConfig.Keys.MID_TRACKER, "NULL");
@@ -368,7 +400,7 @@ public class LeshanServerBuilder {
             dtlsConfig = dtlsConfigBuilder.build();
         }
 
-        return new LeshanServer(localAddress, registrationStore, securityStore, authorizer, modelProvider, encoder,
-                decoder, coapConfig, dtlsConfig);
+        return new LeshanServer(localAddress, registrationStore, registrationService, observationService, securityStore,
+                authorizer, modelProvider, encoder, decoder, coapConfig, dtlsConfig);
     }
 }
