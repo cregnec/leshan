@@ -51,9 +51,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.eclipse.californium.core.network.config.NetworkConfig;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.leshan.LwM2m;
 import org.eclipse.leshan.core.model.ObjectLoader;
 import org.eclipse.leshan.core.model.ObjectModel;
@@ -64,10 +61,6 @@ import org.eclipse.leshan.server.californium.LeshanServerBuilder;
 import org.eclipse.leshan.server.californium.impl.LeshanServer;
 import org.eclipse.leshan.server.cluster.RedisRegistrationStore;
 import org.eclipse.leshan.server.cluster.RedisSecurityStore;
-import org.eclipse.leshan.server.demo.servlet.ClientServlet;
-import org.eclipse.leshan.server.demo.servlet.EventServlet;
-import org.eclipse.leshan.server.demo.servlet.ObjectSpecServlet;
-import org.eclipse.leshan.server.demo.servlet.SecurityServlet;
 import org.eclipse.leshan.server.impl.FileSecurityStore;
 import org.eclipse.leshan.server.model.LwM2mModelProvider;
 import org.eclipse.leshan.server.model.StaticModelProvider;
@@ -79,11 +72,6 @@ import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.util.Pool;
-
-import java.net.InetAddress;
-
-import javax.jmdns.JmDNS;
-import javax.jmdns.ServiceInfo;
 
 public class LeshanServerDemo {
 
@@ -208,7 +196,7 @@ public class LeshanServerDemo {
         String keyStoreAliasPass = cl.getOptionValue("ksap");
 
         // Get mDNS publish switch
-        Boolean publishDNSSdServices  = cl.hasOption("mdns");
+        Boolean publishDNSSdServices = cl.hasOption("mdns");
 
         try {
             createAndStartServer(webPort, localAddress, localPort, secureLocalAddress, secureLocalPort,
@@ -225,7 +213,8 @@ public class LeshanServerDemo {
 
     public static void createAndStartServer(int webPort, String localAddress, int localPort, String secureLocalAddress,
             int secureLocalPort, String modelsFolderPath, String redisUrl, String keyStorePath, String keyStoreType,
-            String keyStorePass, String keyStoreAlias, String keyStoreAliasPass, Boolean publishDNSSdServices) throws Exception {
+            String keyStorePass, String keyStoreAlias, String keyStoreAliasPass, Boolean publishDNSSdServices)
+            throws Exception {
         // Prepare LWM2M server
         LeshanServerBuilder builder = new LeshanServerBuilder();
         builder.setLocalAddress(localAddress, localPort);
@@ -349,50 +338,44 @@ public class LeshanServerDemo {
         LeshanServer lwServer = builder.build();
 
         // Now prepare Jetty
-        Server server = new Server(webPort);
-        WebAppContext root = new WebAppContext();
-        root.setContextPath("/");
-        root.setResourceBase(LeshanServerDemo.class.getClassLoader().getResource("webapp").toExternalForm());
-        root.setParentLoaderPriority(true);
-        server.setHandler(root);
-
-        // Create Servlet
-        EventServlet eventServlet = new EventServlet(lwServer, lwServer.getSecureAddress().getPort());
-        ServletHolder eventServletHolder = new ServletHolder(eventServlet);
-        root.addServlet(eventServletHolder, "/event/*");
-
-        ServletHolder clientServletHolder = new ServletHolder(
-                new ClientServlet(lwServer, lwServer.getSecureAddress().getPort()));
-        root.addServlet(clientServletHolder, "/api/clients/*");
-
-        ServletHolder securityServletHolder = new ServletHolder(new SecurityServlet(securityStore, publicKey));
-        root.addServlet(securityServletHolder, "/api/security/*");
-
-        ServletHolder objectSpecServletHolder = new ServletHolder(new ObjectSpecServlet(lwServer.getModelProvider()));
-        root.addServlet(objectSpecServletHolder, "/api/objectspecs/*");
-
-        // Register a service to DNS-SD
-        if (publishDNSSdServices) {
-
-            // Create a JmDNS instance
-            JmDNS jmdns = JmDNS.create(InetAddress.getLocalHost());
-            
-            // Publish Leshan HTTP Service
-            ServiceInfo httpServiceInfo = ServiceInfo.create("_http._tcp.local.", "leshan", webPort, "");
-            jmdns.registerService(httpServiceInfo);
-
-            // Publish Leshan CoAP Service
-            ServiceInfo coapServiceInfo = ServiceInfo.create("_coap._udp.local.", "leshan", localPort, "");
-            jmdns.registerService(coapServiceInfo);
-
-            // Publish Leshan Secure CoAP Service
-            ServiceInfo coapSecureServiceInfo = ServiceInfo.create("_coaps._udp.local.", "leshan", secureLocalPort, "");
-            jmdns.registerService(coapSecureServiceInfo);
-        }
+        /*
+         * Server server = new Server(webPort); WebAppContext root = new WebAppContext(); root.setContextPath("/");
+         * root.setResourceBase(LeshanServerDemo.class.getClassLoader().getResource("webapp").toExternalForm());
+         * root.setParentLoaderPriority(true); server.setHandler(root);
+         * 
+         * // Create Servlet EventServlet eventServlet = new EventServlet(lwServer,
+         * lwServer.getSecureAddress().getPort()); ServletHolder eventServletHolder = new ServletHolder(eventServlet);
+         * root.addServlet(eventServletHolder, "/event/*");
+         * 
+         * ServletHolder clientServletHolder = new ServletHolder( new ClientServlet(lwServer,
+         * lwServer.getSecureAddress().getPort())); root.addServlet(clientServletHolder, "/api/clients/*");
+         * 
+         * ServletHolder securityServletHolder = new ServletHolder(new SecurityServlet(securityStore, publicKey));
+         * root.addServlet(securityServletHolder, "/api/security/*");
+         * 
+         * ServletHolder objectSpecServletHolder = new ServletHolder(new
+         * ObjectSpecServlet(lwServer.getModelProvider())); root.addServlet(objectSpecServletHolder,
+         * "/api/objectspecs/*");
+         * 
+         * // Register a service to DNS-SD if (publishDNSSdServices) {
+         * 
+         * // Create a JmDNS instance JmDNS jmdns = JmDNS.create(InetAddress.getLocalHost());
+         * 
+         * // Publish Leshan HTTP Service ServiceInfo httpServiceInfo = ServiceInfo.create("_http._tcp.local.",
+         * "leshan", webPort, ""); jmdns.registerService(httpServiceInfo);
+         * 
+         * // Publish Leshan CoAP Service ServiceInfo coapServiceInfo = ServiceInfo.create("_coap._udp.local.",
+         * "leshan", localPort, ""); jmdns.registerService(coapServiceInfo);
+         * 
+         * // Publish Leshan Secure CoAP Service ServiceInfo coapSecureServiceInfo =
+         * ServiceInfo.create("_coaps._udp.local.", "leshan", secureLocalPort, "");
+         * jmdns.registerService(coapSecureServiceInfo); }
+         */
 
         // Start Jetty & Leshan
         lwServer.start();
-        server.start();
-        LOG.info("Web server started at {}.", server.getURI());
+        /*
+         * server.start(); LOG.info("Web server started at {}.", server.getURI());
+         */
     }
 }
