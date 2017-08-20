@@ -51,6 +51,7 @@ Contributors:
         <module>leshan-integration-tests</module> 
 
         <module>leshan-server-demo</module>
+        <module>leshan-server-client-demo</module>
         <module>leshan-client-demo</module>
         <module>leshan-bsserver-demo</module>
     </modules>
