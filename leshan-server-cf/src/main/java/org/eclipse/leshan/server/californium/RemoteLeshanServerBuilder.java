@@ -302,7 +302,7 @@ public class RemoteLeshanServerBuilder {
         if (registrationStore == null)
             registrationStore = new InMemoryRegistrationStore();
         /*
-         * if (registrationService == null) registrationService = new RegistrationServiceImpl(registrationStore);
+         * if (registrationService == null) registrationService = new RemoteRegistrationServiceImpl(registrationStore);
          */
         if (authorizer == null)
             authorizer = new DefaultAuthorizer(securityStore);
