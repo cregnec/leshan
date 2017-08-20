@@ -42,6 +42,8 @@ import org.eclipse.leshan.server.security.SecurityStore;
  */
 public interface RemoteLwM2mServer extends Remote {
 
+    final static String LOOKUPNAME = "RemoteLwM2mServer";
+
     /**
      * Sends a Lightweight M2M request synchronously. Will block until a response is received from the remote client.
      * 
