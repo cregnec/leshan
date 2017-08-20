@@ -104,7 +104,7 @@ Contributors:
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>org.eclipse.leshan.server.demo.LeshanServerDemo</mainClass>
+                            <mainClass>org.eclipse.leshan.server.demo.RemoteLeshanServerDemo</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
