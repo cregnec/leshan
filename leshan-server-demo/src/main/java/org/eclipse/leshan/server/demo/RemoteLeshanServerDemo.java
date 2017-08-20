@@ -23,6 +23,10 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.net.BindException;
 import java.net.URI;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.security.AlgorithmParameters;
 import java.security.Key;
 import java.security.KeyFactory;
@@ -64,6 +68,7 @@ import org.eclipse.leshan.server.cluster.RedisSecurityStore;
 import org.eclipse.leshan.server.impl.FileSecurityStore;
 import org.eclipse.leshan.server.model.LwM2mModelProvider;
 import org.eclipse.leshan.server.model.StaticModelProvider;
+import org.eclipse.leshan.server.registration.RemoteRegistrationService;
 import org.eclipse.leshan.server.security.EditableSecurityStore;
 import org.eclipse.leshan.util.Hex;
 import org.slf4j.Logger;
@@ -198,6 +203,8 @@ public class RemoteLeshanServerDemo {
         // Get mDNS publish switch
         Boolean publishDNSSdServices = cl.hasOption("mdns");
 
+        RemoteRegistrationService rmtRegistrationSevice = getRegistrationService();
+
         try {
             createAndStartServer(webPort, localAddress, localPort, secureLocalAddress, secureLocalPort,
                     modelsFolderPath, redisUrl, keyStorePath, keyStoreType, keyStorePass, keyStoreAlias,
@@ -207,8 +214,36 @@ public class RemoteLeshanServerDemo {
                     String.format("Web port %s is already used, you could change it using 'webport' option.", webPort));
             formatter.printHelp(USAGE, options);
         } catch (Exception e) {
-            LOG.error("Jetty stopped with unexpected error ...", e);
+            LOG.error("Remote Leshan server stopped with unexpected error ...", e);
         }
+    }
+
+    public static RemoteRegistrationService getRegistrationService() {
+        RemoteConfigurationImpl rmtConfig = new RemoteConfigurationImpl();
+
+        try {
+            LOG.info("Creating RMI registry on default port");
+            Registry registry = LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
+
+            RemoteConfiguration stub = (RemoteConfiguration) UnicastRemoteObject.exportObject(rmtConfig, 0);
+            registry.rebind(RemoteConfiguration.LOOKUPNAME, stub);
+
+            Object registrationServiceObject = new Object();
+            rmtConfig.setSynchronizationObject(registrationServiceObject);
+            synchronized (registrationServiceObject) {
+                try {
+                    LOG.info("Waiting remote user to set up his RegistrationService");
+                    registrationServiceObject.wait();
+
+                    return rmtConfig.getRegistrationService();
+                } catch (InterruptedException e) {
+                    LOG.error("Failed to retrieve remote RegistrationService", e);
+                }
+            }
+        } catch (RemoteException e) {
+            LOG.error("Failed to create RMI registry and bind RemoteConfiguration", e);
+        }
+        return null;
     }
 
     public static void createAndStartServer(int webPort, String localAddress, int localPort, String secureLocalAddress,
