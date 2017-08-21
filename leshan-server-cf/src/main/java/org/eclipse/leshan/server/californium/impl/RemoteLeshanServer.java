@@ -42,11 +42,11 @@ import org.eclipse.leshan.server.Destroyable;
 import org.eclipse.leshan.server.RemoteLwM2mServer;
 import org.eclipse.leshan.server.Startable;
 import org.eclipse.leshan.server.Stoppable;
-import org.eclipse.leshan.server.californium.CaliforniumRegistrationStore;
 import org.eclipse.leshan.server.californium.LeshanServerBuilder;
+import org.eclipse.leshan.server.californium.RemoteCaliforniumRegistrationStore;
 import org.eclipse.leshan.server.impl.RemoteRegistrationServiceImpl;
 import org.eclipse.leshan.server.model.LwM2mModelProvider;
-import org.eclipse.leshan.server.observation.ObservationService;
+import org.eclipse.leshan.server.observation.RemoteObservationService;
 import org.eclipse.leshan.server.registration.Registration;
 import org.eclipse.leshan.server.registration.RegistrationListener;
 import org.eclipse.leshan.server.registration.RegistrationUpdate;
@@ -83,7 +83,7 @@ public class RemoteLeshanServer implements RemoteLwM2mServer {
 
     private final RemoteRegistrationServiceImpl registrationService;
 
-    private final ObservationServiceImpl observationService;
+    private final RemoteObservationServiceImpl observationService;
 
     private final SecurityStore securityStore;
 
@@ -93,7 +93,7 @@ public class RemoteLeshanServer implements RemoteLwM2mServer {
 
     private final CoapEndpoint secureEndpoint;
 
-    private final CaliforniumRegistrationStore registrationStore;
+    private final RemoteCaliforniumRegistrationStore registrationStore;
 
     /**
      * Initialize a server which will bind to the specified address and port.
@@ -108,8 +108,8 @@ public class RemoteLeshanServer implements RemoteLwM2mServer {
      * @param coapConfig the CoAP {@link NetworkConfig}.
      * @param dtlsConfig the DTLS configuration : {@link DtlsConnectorConfig}.
      */
-    public RemoteLeshanServer(InetSocketAddress localAddress, CaliforniumRegistrationStore registrationStore,
-            RemoteRegistrationServiceImpl registrationService, ObservationServiceImpl observationService,
+    public RemoteLeshanServer(InetSocketAddress localAddress, RemoteCaliforniumRegistrationStore registrationStore,
+            RemoteRegistrationServiceImpl registrationService, RemoteObservationServiceImpl observationService,
             SecurityStore securityStore, Authorizer authorizer, LwM2mModelProvider modelProvider,
             LwM2mNodeEncoder encoder, LwM2mNodeDecoder decoder, NetworkConfig coapConfig,
             DtlsConnectorConfig dtlsConfig) {
@@ -123,7 +123,7 @@ public class RemoteLeshanServer implements RemoteLwM2mServer {
 
         // Init services and stores
         this.registrationStore = registrationStore;
-        this.registrationService = registrationService;
+        this.registrationService = new RemoteRegistrationServiceImpl(registrationStore);
         this.securityStore = securityStore;
         this.observationService = observationService;
         this.modelProvider = modelProvider;
@@ -183,8 +183,8 @@ public class RemoteLeshanServer implements RemoteLwM2mServer {
         coapServer.add(rdResource);
 
         // create sender
-        requestSender = new CaliforniumLwM2mRequestSender(endpoints, this.observationService, modelProvider, encoder,
-                decoder);
+        requestSender = new RemoteCaliforniumLwM2mRequestSender(endpoints, this.observationService, modelProvider,
+                encoder, decoder);
     }
 
     public void start() {
@@ -244,7 +244,7 @@ public class RemoteLeshanServer implements RemoteLwM2mServer {
     }
 
     @Override
-    public ObservationService getObservationService() {
+    public RemoteObservationService getObservationService() {
         return this.observationService;
     }
 

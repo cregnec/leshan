@@ -34,9 +34,9 @@ import org.eclipse.leshan.core.node.codec.LwM2mNodeEncoder;
 import org.eclipse.leshan.core.observation.Observation;
 import org.eclipse.leshan.server.LwM2mServer;
 import org.eclipse.leshan.server.californium.impl.InMemoryRegistrationStore;
-import org.eclipse.leshan.server.californium.impl.LwM2mPskStore;
-import org.eclipse.leshan.server.californium.impl.ObservationServiceImpl;
 import org.eclipse.leshan.server.californium.impl.RemoteLeshanServer;
+import org.eclipse.leshan.server.californium.impl.RemoteLwM2mPskStore;
+import org.eclipse.leshan.server.californium.impl.RemoteObservationServiceImpl;
 import org.eclipse.leshan.server.impl.InMemorySecurityStore;
 import org.eclipse.leshan.server.impl.RemoteRegistrationServiceImpl;
 import org.eclipse.leshan.server.model.LwM2mModelProvider;
@@ -61,9 +61,9 @@ public class RemoteLeshanServerBuilder {
 
     private static final Logger LOG = LoggerFactory.getLogger(RemoteLeshanServerBuilder.class);
 
-    private CaliforniumRegistrationStore registrationStore;
+    private RemoteCaliforniumRegistrationStore registrationStore;
     private RemoteRegistrationServiceImpl registrationService;
-    private ObservationServiceImpl observationService;
+    private RemoteObservationServiceImpl observationService;
     private SecurityStore securityStore;
     private LwM2mModelProvider modelProvider;
     private Authorizer authorizer;
@@ -153,7 +153,7 @@ public class RemoteLeshanServerBuilder {
      * By default the {@link InMemoryRegistrationStore} implementation is used.
      * 
      */
-    public RemoteLeshanServerBuilder setRegistrationStore(CaliforniumRegistrationStore registrationStore) {
+    public RemoteLeshanServerBuilder setRegistrationStore(RemoteCaliforniumRegistrationStore registrationStore) {
         this.registrationStore = registrationStore;
         return this;
     }
@@ -175,7 +175,7 @@ public class RemoteLeshanServerBuilder {
      * </p>
      * 
      */
-    public RemoteLeshanServerBuilder setObservationService(ObservationServiceImpl observationService) {
+    public RemoteLeshanServerBuilder setObservationService(RemoteObservationServiceImpl observationService) {
         this.observationService = observationService;
         return this;
     }
@@ -299,8 +299,8 @@ public class RemoteLeshanServerBuilder {
     public RemoteLeshanServer build() {
         if (localAddress == null)
             localAddress = new InetSocketAddress(LwM2m.DEFAULT_COAP_PORT);
-        if (registrationStore == null)
-            registrationStore = new InMemoryRegistrationStore();
+        // TODO keep this registrationStore while it is being used by observationService
+        assert (registrationStore != null);
         /*
          * if (registrationService == null) registrationService = new RemoteRegistrationServiceImpl(registrationStore);
          */
@@ -313,7 +313,7 @@ public class RemoteLeshanServerBuilder {
         if (decoder == null)
             decoder = new DefaultLwM2mNodeDecoder();
         if (observationService == null)
-            observationService = new ObservationServiceImpl(registrationStore, modelProvider, decoder);
+            observationService = new RemoteObservationServiceImpl(registrationStore, modelProvider, decoder);
         if (coapConfig == null) {
             coapConfig = new NetworkConfig();
             coapConfig.set(NetworkConfig.Keys.MID_TRACKER, "NULL");
@@ -332,7 +332,7 @@ public class RemoteLeshanServerBuilder {
             DtlsConnectorConfig incompleteConfig = dtlsConfigBuilder.getIncompleteConfig();
             // Handle PSK Store
             if (incompleteConfig.getPskStore() == null) {
-                dtlsConfigBuilder.setPskStore(new LwM2mPskStore(this.securityStore, registrationStore));
+                dtlsConfigBuilder.setPskStore(new RemoteLwM2mPskStore(this.securityStore, registrationStore));
             } else {
                 LOG.warn(
                         "PskStore should be automatically set by Leshan. Using a custom implementation is not advised.");
