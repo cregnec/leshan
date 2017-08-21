@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 Sierra Wireless and others.
+ * Copyright (c) 2015 Sierra Wireless and others.
  * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,16 +13,10 @@
  * Contributors:
  *     Sierra Wireless - initial API and implementation
  *******************************************************************************/
-package org.eclipse.leshan.server.demo;
+package org.eclipse.leshan.server.client.demo.servlet.log;
 
-import java.rmi.Remote;
-import java.rmi.RemoteException;
+public interface CoapMessageListener {
 
-import org.eclipse.leshan.server.registration.RemoteRegistrationService;
-
-public interface RemoteConfiguration extends Remote {
-    static final String LOOKUPNAME = "RemoteConfiguration";
-
-    void setRegistrationService(RemoteRegistrationService remoteRegistrationService) throws RemoteException;
+    void trace(CoapMessage message);
 
 }

@@ -13,7 +13,7 @@
  * Contributors:
  *     Sierra Wireless - initial API and implementation
  *******************************************************************************/
-package org.eclipse.leshan.server.demo.servlet;
+package org.eclipse.leshan.server.client.demo.servlet;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -27,14 +27,14 @@ import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.leshan.core.node.LwM2mNode;
 import org.eclipse.leshan.core.observation.Observation;
 import org.eclipse.leshan.core.response.ObserveResponse;
-import org.eclipse.leshan.server.demo.servlet.json.LwM2mNodeSerializer;
-import org.eclipse.leshan.server.demo.servlet.json.RegistrationSerializer;
-import org.eclipse.leshan.server.demo.servlet.log.CoapMessage;
-import org.eclipse.leshan.server.demo.servlet.log.CoapMessageListener;
-import org.eclipse.leshan.server.demo.servlet.log.CoapMessageTracer;
-import org.eclipse.leshan.server.demo.utils.EventSource;
-import org.eclipse.leshan.server.demo.utils.EventSourceServlet;
-import org.eclipse.leshan.server.impl.RemoteRegistrationServiceImpl;
+import org.eclipse.leshan.server.californium.impl.LeshanServer;
+import org.eclipse.leshan.server.client.demo.servlet.json.LwM2mNodeSerializer;
+import org.eclipse.leshan.server.client.demo.servlet.json.RegistrationSerializer;
+import org.eclipse.leshan.server.client.demo.servlet.log.CoapMessage;
+import org.eclipse.leshan.server.client.demo.servlet.log.CoapMessageListener;
+import org.eclipse.leshan.server.client.demo.servlet.log.CoapMessageTracer;
+import org.eclipse.leshan.server.client.demo.utils.EventSource;
+import org.eclipse.leshan.server.client.demo.utils.EventSourceServlet;
 import org.eclipse.leshan.server.observation.ObservationListener;
 import org.eclipse.leshan.server.registration.Registration;
 import org.eclipse.leshan.server.registration.RegistrationListener;
@@ -129,10 +129,9 @@ public class EventServlet extends EventSourceServlet {
         }
     };
 
-    public EventServlet(RemoteRegistrationServiceImpl registrationService, int securePort) {
-        registrationService.addListener(this.registrationListener);
-        // TODO
-        // observationService.addListener(this.observationListener);
+    public EventServlet(LeshanServer server, int securePort) {
+        server.getRegistrationService().addListener(this.registrationListener);
+        server.getObservationService().addListener(this.observationListener);
 
         // add an interceptor to each endpoint to trace all CoAP messages
         coapMessageTracer = new CoapMessageTracer(server.getRegistrationService());

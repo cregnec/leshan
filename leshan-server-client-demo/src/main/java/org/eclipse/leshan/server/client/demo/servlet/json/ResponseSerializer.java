@@ -13,7 +13,7 @@
  * Contributors:
  *     Sierra Wireless - initial API and implementation
  *******************************************************************************/
-package org.eclipse.leshan.server.demo.servlet.json;
+package org.eclipse.leshan.server.client.demo.servlet.json;
 
 import java.lang.reflect.Type;
 
@@ -37,8 +37,7 @@ public class ResponseSerializer implements JsonSerializer<LwM2mResponse> {
         if (typeOfSrc instanceof Class<?>) {
             if (ReadResponse.class.isAssignableFrom((Class<?>) typeOfSrc)) {
                 element.add("content", context.serialize(((ReadResponse) src).getContent()));
-            }
-            else if (DiscoverResponse.class.isAssignableFrom((Class<?>) typeOfSrc)) {
+            } else if (DiscoverResponse.class.isAssignableFrom((Class<?>) typeOfSrc)) {
                 element.add("objectLinks", context.serialize(((DiscoverResponse) src).getObjectLinks()));
             }
         }

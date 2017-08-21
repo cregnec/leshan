@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.eclipse.leshan.server.demo.utils;
+package org.eclipse.leshan.server.client.demo.utils;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
@@ -92,7 +93,8 @@ public abstract class EventSourceServlet extends HttpServlet {
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         Enumeration<String> acceptValues = request.getHeaders("Accept");
         while (acceptValues.hasMoreElements()) {
             String accept = acceptValues.nextElement();

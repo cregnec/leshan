@@ -13,7 +13,7 @@
  * Contributors:
  *     Sierra Wireless - initial API and implementation
  *******************************************************************************/
-package org.eclipse.leshan.server.demo.servlet.log;
+package org.eclipse.leshan.server.client.demo.servlet.log;
 
 import java.net.InetAddress;
 import java.util.Map;
@@ -56,8 +56,8 @@ public class CoapMessageTracer implements MessageInterceptor {
 
     @Override
     public void sendRequest(Request request) {
-        CoapMessageListener listener = listeners.get(toStringAddress(request.getDestination(),
-                request.getDestinationPort()));
+        CoapMessageListener listener = listeners
+                .get(toStringAddress(request.getDestination(), request.getDestinationPort()));
         if (listener != null) {
             listener.trace(new CoapMessage(request, false));
         }
@@ -65,8 +65,8 @@ public class CoapMessageTracer implements MessageInterceptor {
 
     @Override
     public void sendResponse(Response response) {
-        CoapMessageListener listener = listeners.get(toStringAddress(response.getDestination(),
-                response.getDestinationPort()));
+        CoapMessageListener listener = listeners
+                .get(toStringAddress(response.getDestination(), response.getDestinationPort()));
         if (listener != null) {
             listener.trace(new CoapMessage(response, false));
         }
@@ -74,8 +74,8 @@ public class CoapMessageTracer implements MessageInterceptor {
 
     @Override
     public void sendEmptyMessage(EmptyMessage message) {
-        CoapMessageListener listener = listeners.get(toStringAddress(message.getDestination(),
-                message.getDestinationPort()));
+        CoapMessageListener listener = listeners
+                .get(toStringAddress(message.getDestination(), message.getDestinationPort()));
         if (listener != null) {
             listener.trace(new CoapMessage(message, false));
         }

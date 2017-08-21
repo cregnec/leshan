@@ -13,7 +13,7 @@
  * Contributors:
  *     Sierra Wireless - initial API and implementation
  *******************************************************************************/
-package org.eclipse.leshan.server.demo.servlet;
+package org.eclipse.leshan.server.client.demo.servlet;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -27,8 +27,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.StringUtils;
-import org.eclipse.leshan.server.demo.servlet.json.SecurityDeserializer;
-import org.eclipse.leshan.server.demo.servlet.json.SecuritySerializer;
+import org.eclipse.leshan.server.client.demo.servlet.json.SecurityDeserializer;
+import org.eclipse.leshan.server.client.demo.servlet.json.SecuritySerializer;
 import org.eclipse.leshan.server.security.EditableSecurityStore;
 import org.eclipse.leshan.server.security.NonUniqueSecurityInfoException;
 import org.eclipse.leshan.server.security.SecurityInfo;

@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.eclipse.leshan.server.demo.utils;
+package org.eclipse.leshan.server.client.demo.utils;
 
 import java.io.IOException;
 
 /**
  * <p>
- * {@link EventSource} is the passive half of an event source connection, as defined by the <a
- * href="http://www.w3.org/TR/eventsource/">EventSource Specification</a>.
+ * {@link EventSource} is the passive half of an event source connection, as defined by the
+ * <a href="http://www.w3.org/TR/eventsource/">EventSource Specification</a>.
  * </p>
  * <p>
  * {@link EventSource.Emitter} is the active half of the connection and allows to operate on the connection.

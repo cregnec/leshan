@@ -13,7 +13,7 @@
  * Contributors:
  *     Sierra Wireless - initial API and implementation
  *******************************************************************************/
-package org.eclipse.leshan.server.demo.servlet.json;
+package org.eclipse.leshan.server.client.demo.servlet.json;
 
 import java.lang.reflect.Type;
 

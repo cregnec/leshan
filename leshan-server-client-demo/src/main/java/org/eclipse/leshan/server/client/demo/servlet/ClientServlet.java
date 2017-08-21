@@ -13,7 +13,7 @@
  * Contributors:
  *     Sierra Wireless - initial API and implementation
  *******************************************************************************/
-package org.eclipse.leshan.server.demo.servlet;
+package org.eclipse.leshan.server.client.demo.servlet;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -54,10 +54,10 @@ import org.eclipse.leshan.core.response.ObserveResponse;
 import org.eclipse.leshan.core.response.ReadResponse;
 import org.eclipse.leshan.core.response.WriteResponse;
 import org.eclipse.leshan.server.LwM2mServer;
-import org.eclipse.leshan.server.demo.servlet.json.LwM2mNodeDeserializer;
-import org.eclipse.leshan.server.demo.servlet.json.LwM2mNodeSerializer;
-import org.eclipse.leshan.server.demo.servlet.json.RegistrationSerializer;
-import org.eclipse.leshan.server.demo.servlet.json.ResponseSerializer;
+import org.eclipse.leshan.server.client.demo.servlet.json.LwM2mNodeDeserializer;
+import org.eclipse.leshan.server.client.demo.servlet.json.LwM2mNodeSerializer;
+import org.eclipse.leshan.server.client.demo.servlet.json.RegistrationSerializer;
+import org.eclipse.leshan.server.client.demo.servlet.json.ResponseSerializer;
 import org.eclipse.leshan.server.registration.Registration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -165,7 +165,8 @@ public class ClientServlet extends HttpServlet {
                 // get content format
                 String contentFormatParam = req.getParameter(FORMAT_PARAM);
                 ContentFormat contentFormat = contentFormatParam != null
-                        ? ContentFormat.fromName(contentFormatParam.toUpperCase()) : null;
+                        ? ContentFormat.fromName(contentFormatParam.toUpperCase())
+                        : null;
 
                 // create & process request
                 ReadRequest request = new ReadRequest(contentFormat, target);
@@ -229,7 +230,8 @@ public class ClientServlet extends HttpServlet {
                 // get content format
                 String contentFormatParam = req.getParameter(FORMAT_PARAM);
                 ContentFormat contentFormat = contentFormatParam != null
-                        ? ContentFormat.fromName(contentFormatParam.toUpperCase()) : null;
+                        ? ContentFormat.fromName(contentFormatParam.toUpperCase())
+                        : null;
 
                 // create & process request
                 LwM2mNode node = extractLwM2mNode(target, req);
@@ -262,7 +264,8 @@ public class ClientServlet extends HttpServlet {
                     // get content format
                     String contentFormatParam = req.getParameter(FORMAT_PARAM);
                     ContentFormat contentFormat = contentFormatParam != null
-                            ? ContentFormat.fromName(contentFormatParam.toUpperCase()) : null;
+                            ? ContentFormat.fromName(contentFormatParam.toUpperCase())
+                            : null;
 
                     // create & process request
                     ObserveRequest request = new ObserveRequest(contentFormat, target);
@@ -306,7 +309,8 @@ public class ClientServlet extends HttpServlet {
                     // get content format
                     String contentFormatParam = req.getParameter(FORMAT_PARAM);
                     ContentFormat contentFormat = contentFormatParam != null
-                            ? ContentFormat.fromName(contentFormatParam.toUpperCase()) : null;
+                            ? ContentFormat.fromName(contentFormatParam.toUpperCase())
+                            : null;
 
                     // create & process request
                     LwM2mNode node = extractLwM2mNode(target, req);

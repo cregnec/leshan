@@ -15,7 +15,7 @@
  *     Bosch Software Innovations - added Redis URL support with authentication
  *     Firis SA - added mDNS services registering 
  *******************************************************************************/
-package org.eclipse.leshan.server.demo;
+package org.eclipse.leshan.server.client.demo;
 
 import java.net.BindException;
 import java.rmi.NotBoundException;
@@ -30,16 +30,11 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.leshan.LwM2m;
-import org.eclipse.leshan.server.californium.CaliforniumRegistrationStore;
-import org.eclipse.leshan.server.californium.impl.InMemoryRegistrationStore;
+import org.eclipse.leshan.server.californium.RemoteCaliforniumRegistrationStore;
+import org.eclipse.leshan.server.californium.impl.RemoteInMemoryRegistrationStore;
 import org.eclipse.leshan.server.californium.impl.RemoteLeshanServer;
-import org.eclipse.leshan.server.demo.servlet.EventServlet;
-import org.eclipse.leshan.server.impl.RemoteRegistrationServiceImpl;
-import org.eclipse.leshan.server.registration.RemoteRegistrationService;
+import org.eclipse.leshan.server.demo.RemoteConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,6 +73,8 @@ public class RemoteLeshanClientDemo {
     private final static String DEFAULT_KEYSTORE_TYPE = KeyStore.getDefaultType();
 
     private final static String DEFAULT_KEYSTORE_ALIAS = "leshan";
+
+    private static RemoteCaliforniumRegistrationStore registrationStore;
 
     public static void main(String[] args) {
         // Define options for command line tools
@@ -181,9 +178,7 @@ public class RemoteLeshanClientDemo {
 
     public static void createAndStartServer(int webPort) throws Exception {
 
-        CaliforniumRegistrationStore registrationStore = new InMemoryRegistrationStore();
-
-        RemoteRegistrationServiceImpl rmtRegistrationService = new RemoteRegistrationServiceImpl(registrationStore);
+        registrationStore = new RemoteInMemoryRegistrationStore();
 
         try {
             LOG.info("Getting RMI registry");
@@ -195,9 +190,9 @@ public class RemoteLeshanClientDemo {
             RemoteLeshanServer lwServer = (RemoteLeshanServer) registry.lookup(RemoteLeshanServer.LOOKUPNAME);
 
             LOG.info("Setting registration service");
-            RemoteRegistrationService stub = (RemoteRegistrationService) UnicastRemoteObject
-                    .exportObject(rmtRegistrationService, 0);
-            rmtConfig.setRegistrationService(stub);
+            RemoteCaliforniumRegistrationStore stub = (RemoteCaliforniumRegistrationStore) UnicastRemoteObject
+                    .exportObject(registrationStore, 0);
+            rmtConfig.setRegistrationStore(stub);
 
         } catch (RemoteException e) {
             LOG.error("Failed to get RMI registry", e);
@@ -205,43 +200,44 @@ public class RemoteLeshanClientDemo {
             LOG.error("Failed to lookup RMI object", e);
         }
         // Now prepare Jetty
-        
-        Server server = new Server(webPort); 
-        WebAppContext root = new WebAppContext(); root.setContextPath("/");
-        root.setResourceBase(LeshanServerDemo.class.getClassLoader().getResource("webapp").toExternalForm());
-        root.setParentLoaderPriority(true); server.setHandler(root);
-        
-        // Create Servlet 
-        EventServlet eventServlet = new EventServlet(lwServer, lwServer.getSecureAddress().getPort()); 
-        ServletHolder eventServletHolder = new ServletHolder(eventServlet);
-        root.addServlet(eventServletHolder, "/event/*");
-        
-        ServletHolder clientServletHolder = new ServletHolder( new ClientServlet(lwServer,
-        lwServer.getSecureAddress().getPort())); root.addServlet(clientServletHolder, "/api/clients/*");
-        
-        ServletHolder securityServletHolder = new ServletHolder(new SecurityServlet(securityStore, publicKey));
-        root.addServlet(securityServletHolder, "/api/security/*");
-        
-        ServletHolder objectSpecServletHolder = new ServletHolder(new
-        ObjectSpecServlet(lwServer.getModelProvider())); root.addServlet(objectSpecServletHolder,
-        "/api/objectspecs/*");
-        
-        // Register a service to DNS-SD if (publishDNSSdServices) {
-        
-        // Create a JmDNS instance JmDNS jmdns = JmDNS.create(InetAddress.getLocalHost());
-        
-        // Publish Leshan HTTP Service ServiceInfo httpServiceInfo = ServiceInfo.create("_http._tcp.local.",
-        "leshan", webPort, ""); jmdns.registerService(httpServiceInfo);
-        
-        // Publish Leshan CoAP Service ServiceInfo coapServiceInfo = ServiceInfo.create("_coap._udp.local.",
-        "leshan", localPort, ""); jmdns.registerService(coapServiceInfo);
-        
-        // Publish Leshan Secure CoAP Service ServiceInfo coapSecureServiceInfo =
-        ServiceInfo.create("_coaps._udp.local.", "leshan", secureLocalPort, "");
-        jmdns.registerService(coapSecureServiceInfo); }
 
-    // Start Jetty & Leshan
-    /*
-     * server.start(); LOG.info("Web server started at {}.", server.getURI());
-     */
-}}
+        // Server server = new Server(webPort);
+        // WebAppContext root = new WebAppContext(); root.setContextPath("/");
+        // root.setResourceBase(LeshanServerDemo.class.getClassLoader().getResource("webapp").toExternalForm());
+        // root.setParentLoaderPriority(true); server.setHandler(root);
+        //
+        // // Create Servlet
+        // EventServlet eventServlet = new EventServlet(lwServer, lwServer.getSecureAddress().getPort());
+        // ServletHolder eventServletHolder = new ServletHolder(eventServlet);
+        // root.addServlet(eventServletHolder, "/event/*");
+        //
+        // ServletHolder clientServletHolder = new ServletHolder( new ClientServlet(lwServer,
+        // lwServer.getSecureAddress().getPort())); root.addServlet(clientServletHolder, "/api/clients/*");
+        //
+        // ServletHolder securityServletHolder = new ServletHolder(new SecurityServlet(securityStore, publicKey));
+        // root.addServlet(securityServletHolder, "/api/security/*");
+        //
+        // ServletHolder objectSpecServletHolder = new ServletHolder(new
+        // ObjectSpecServlet(lwServer.getModelProvider())); root.addServlet(objectSpecServletHolder,
+        // "/api/objectspecs/*");
+        //
+        // // Register a service to DNS-SD if (publishDNSSdServices) {
+        //
+        // // Create a JmDNS instance JmDNS jmdns = JmDNS.create(InetAddress.getLocalHost());
+        //
+        // // Publish Leshan HTTP Service ServiceInfo httpServiceInfo = ServiceInfo.create("_http._tcp.local.",
+        // "leshan", webPort, ""); jmdns.registerService(httpServiceInfo);
+        //
+        // // Publish Leshan CoAP Service ServiceInfo coapServiceInfo = ServiceInfo.create("_coap._udp.local.",
+        // "leshan", localPort, ""); jmdns.registerService(coapServiceInfo);
+        //
+        // // Publish Leshan Secure CoAP Service ServiceInfo coapSecureServiceInfo =
+        // ServiceInfo.create("_coaps._udp.local.", "leshan", secureLocalPort, "");
+        // jmdns.registerService(coapSecureServiceInfo); }
+
+        // Start Jetty & Leshan
+        /*
+         * server.start(); LOG.info("Web server started at {}.", server.getURI());
+         */
+    }
+}
