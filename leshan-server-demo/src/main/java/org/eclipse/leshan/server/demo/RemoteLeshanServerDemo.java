@@ -61,14 +61,13 @@ import org.eclipse.leshan.core.model.ObjectModel;
 import org.eclipse.leshan.core.node.codec.DefaultLwM2mNodeDecoder;
 import org.eclipse.leshan.core.node.codec.DefaultLwM2mNodeEncoder;
 import org.eclipse.leshan.core.node.codec.LwM2mNodeDecoder;
+import org.eclipse.leshan.server.californium.RemoteCaliforniumRegistrationStore;
 import org.eclipse.leshan.server.californium.RemoteLeshanServerBuilder;
 import org.eclipse.leshan.server.californium.impl.RemoteLeshanServer;
-import org.eclipse.leshan.server.cluster.RedisRegistrationStore;
 import org.eclipse.leshan.server.cluster.RedisSecurityStore;
 import org.eclipse.leshan.server.impl.FileSecurityStore;
 import org.eclipse.leshan.server.model.LwM2mModelProvider;
 import org.eclipse.leshan.server.model.StaticModelProvider;
-import org.eclipse.leshan.server.registration.RemoteRegistrationService;
 import org.eclipse.leshan.server.security.EditableSecurityStore;
 import org.eclipse.leshan.util.Hex;
 import org.slf4j.Logger;
@@ -203,8 +202,6 @@ public class RemoteLeshanServerDemo {
         // Get mDNS publish switch
         Boolean publishDNSSdServices = cl.hasOption("mdns");
 
-        RemoteRegistrationService rmtRegistrationSevice = getRegistrationService();
-
         try {
             createAndStartServer(webPort, localAddress, localPort, secureLocalAddress, secureLocalPort,
                     modelsFolderPath, redisUrl, keyStorePath, keyStoreType, keyStorePass, keyStoreAlias,
@@ -216,34 +213,6 @@ public class RemoteLeshanServerDemo {
         } catch (Exception e) {
             LOG.error("Remote Leshan server stopped with unexpected error ...", e);
         }
-    }
-
-    public static RemoteRegistrationService getRegistrationService() {
-        RemoteConfigurationImpl rmtConfig = new RemoteConfigurationImpl();
-
-        try {
-            LOG.info("Creating RMI registry on default port");
-            Registry registry = LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
-
-            RemoteConfiguration stub = (RemoteConfiguration) UnicastRemoteObject.exportObject(rmtConfig, 0);
-            registry.rebind(RemoteConfiguration.LOOKUPNAME, stub);
-
-            Object registrationServiceObject = new Object();
-            rmtConfig.setSynchronizationObject(registrationServiceObject);
-            synchronized (registrationServiceObject) {
-                try {
-                    LOG.info("Waiting remote user to set up his RegistrationService");
-                    registrationServiceObject.wait();
-
-                    return rmtConfig.getRegistrationService();
-                } catch (InterruptedException e) {
-                    LOG.error("Failed to retrieve remote RegistrationService", e);
-                }
-            }
-        } catch (RemoteException e) {
-            LOG.error("Failed to create RMI registry and bind RemoteConfiguration", e);
-        }
-        return null;
     }
 
     public static void createAndStartServer(int webPort, String localAddress, int localPort, String secureLocalAddress,
@@ -365,9 +334,40 @@ public class RemoteLeshanServerDemo {
         } else {
             // use Redis Store
             securityStore = new RedisSecurityStore(jedis);
-            builder.setRegistrationStore(new RedisRegistrationStore(jedis));
+            // TODO create remote redis registration store
+
+            // builder.setRegistrationStore(new RedisRegistrationStore(jedis));
         }
         builder.setSecurityStore(securityStore);
+
+        RemoteCaliforniumRegistrationStore rmtRegistrationStore = null;
+
+        RemoteConfigurationImpl rmtConfig = new RemoteConfigurationImpl();
+
+        try {
+            LOG.info("Creating RMI registry on default port");
+            Registry registry = LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
+
+            RemoteConfiguration stub = (RemoteConfiguration) UnicastRemoteObject.exportObject(rmtConfig, 0);
+            registry.rebind(RemoteConfiguration.LOOKUPNAME, stub);
+
+            Object registrationStoreObject = new Object();
+            rmtConfig.setSynchronizationObject(registrationStoreObject);
+            synchronized (registrationStoreObject) {
+                try {
+                    LOG.info("Waiting remote user to set up his RegistrationService");
+                    registrationStoreObject.wait();
+
+                    rmtRegistrationStore = rmtConfig.getRegistrationStore();
+                } catch (InterruptedException e) {
+                    LOG.error("Failed to retrieve remote RegistrationService", e);
+                }
+            }
+        } catch (RemoteException e) {
+            LOG.error("Failed to create RMI registry and bind RemoteConfiguration", e);
+        }
+
+        builder.setRegistrationStore(rmtRegistrationStore);
 
         // Create and start LWM2M server
         RemoteLeshanServer lwServer = builder.build();

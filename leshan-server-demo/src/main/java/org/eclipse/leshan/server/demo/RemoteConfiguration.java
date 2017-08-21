@@ -18,11 +18,11 @@ package org.eclipse.leshan.server.demo;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
-import org.eclipse.leshan.server.registration.RemoteRegistrationService;
+import org.eclipse.leshan.server.californium.RemoteCaliforniumRegistrationStore;
 
 public interface RemoteConfiguration extends Remote {
     static final String LOOKUPNAME = "RemoteConfiguration";
 
-    void setRegistrationService(RemoteRegistrationService remoteRegistrationService) throws RemoteException;
+    void setRegistrationStore(RemoteCaliforniumRegistrationStore remoteRegistrationStore) throws RemoteException;
 
 }

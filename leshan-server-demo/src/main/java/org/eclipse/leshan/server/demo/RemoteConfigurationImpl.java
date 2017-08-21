@@ -17,10 +17,10 @@ package org.eclipse.leshan.server.demo;
 
 import java.rmi.RemoteException;
 
-import org.eclipse.leshan.server.registration.RemoteRegistrationService;
+import org.eclipse.leshan.server.californium.RemoteCaliforniumRegistrationStore;
 
 public class RemoteConfigurationImpl implements RemoteConfiguration {
-    private RemoteRegistrationService registrationService;
+    private RemoteCaliforniumRegistrationStore registrationStore;
     private Object synchronObject;
 
     public RemoteConfigurationImpl() {
@@ -35,13 +35,13 @@ public class RemoteConfigurationImpl implements RemoteConfiguration {
         this.synchronObject = object;
     }
 
-    public RemoteRegistrationService getRegistrationService() {
-        return this.registrationService;
+    public RemoteCaliforniumRegistrationStore getRegistrationStore() {
+        return this.registrationStore;
     }
 
     @Override
-    public void setRegistrationService(RemoteRegistrationService registrationService) throws RemoteException {
-        this.registrationService = registrationService;
+    public void setRegistrationStore(RemoteCaliforniumRegistrationStore registrationStore) throws RemoteException {
+        this.registrationStore = registrationStore;
 
         synchronized (this.synchronObject) {
             this.synchronObject.notify();
