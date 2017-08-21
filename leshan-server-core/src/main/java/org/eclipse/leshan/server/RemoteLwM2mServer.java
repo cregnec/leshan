@@ -27,7 +27,7 @@ import org.eclipse.leshan.core.response.ErrorCallback;
 import org.eclipse.leshan.core.response.LwM2mResponse;
 import org.eclipse.leshan.core.response.ResponseCallback;
 import org.eclipse.leshan.server.model.LwM2mModelProvider;
-import org.eclipse.leshan.server.observation.ObservationService;
+import org.eclipse.leshan.server.observation.RemoteObservationService;
 import org.eclipse.leshan.server.registration.Registration;
 import org.eclipse.leshan.server.registration.RemoteRegistrationService;
 import org.eclipse.leshan.server.security.SecurityStore;
@@ -109,7 +109,7 @@ public interface RemoteLwM2mServer extends Remote {
      * Get the Observation service to access current observations. You can use this object for listening resource
      * observation or cancel it.
      */
-    ObservationService getObservationService();
+    RemoteObservationService getObservationService();
 
     /**
      * Get the SecurityStore containing of security information.
