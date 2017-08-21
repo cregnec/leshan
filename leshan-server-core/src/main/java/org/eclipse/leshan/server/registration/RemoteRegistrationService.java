@@ -17,9 +17,7 @@ package org.eclipse.leshan.server.registration;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.util.Collection;
-
-import org.eclipse.leshan.core.observation.Observation;
+import java.util.Iterator;
 
 /**
  * A service to access registered clients
@@ -27,48 +25,32 @@ import org.eclipse.leshan.core.observation.Observation;
 public interface RemoteRegistrationService extends Remote {
 
     /**
-     * Retrieves a registration by id.
+     * Retrieves a registration by end-point.
      * 
-     * @param id registration id
+     * @param endpoint
      * @return the matching registration or <code>null</code> if not found
      */
-    Registration getById(String id) throws RemoteException;
+    Registration getByEndpoint(String endpoint) throws RemoteException;
 
     /**
-     * Fire registered event.
-     * 
-     * @param registration current registration
-     * @param previousReg previous registration
-     * @param previousObservations previous observations.
+     * Returns an iterator over all registrations. There are no guarantees concerning the order in which the elements
+     * are returned.
+     *
+     * @return an <tt>Iterator</tt> over registrations
      */
-    void fireRegistered(Registration registration, Registration previousReg,
-            Collection<Observation> previousObsersations) throws RemoteException;
+    Iterator<Registration> getAllRegistrations() throws RemoteException;
 
     /**
-     * Fire unregistered event.
+     * Adds a new listener to be notified with client registration events.
      * 
-     * @param registration current registration
-     * @param observations observations
-     * @param newReg new registration.
+     * @param listener
      */
-    void fireUnregistered(Registration registration, Collection<Observation> observations, Registration newReg)
-            throws RemoteException;
+    void addListener(RegistrationListener listener) throws RemoteException;
 
     /**
-     * Fire updated event.
+     * Removes a client registration listener.
      * 
-     * @param update registration update
-     * @param registration updated registration
-     * @param previousRegistration previous registration.
-     * @return the matching registration or <code>null</code> if not found
+     * @param listener the listener to be removed
      */
-    void fireUpdated(RegistrationUpdate update, Registration updatedRegistration, Registration previousRegistration)
-            throws RemoteException;
-
-    /**
-     * Retrieves the registration store.
-     * 
-     * @return the registration store or <code>null</code> if not set
-     */
-    RegistrationStore getStore() throws RemoteException;
+    void removeListener(RegistrationListener listener) throws RemoteException;
 }

@@ -15,6 +15,7 @@
  *******************************************************************************/
 package org.eclipse.leshan.server.impl;
 
+import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -24,9 +25,11 @@ import org.eclipse.leshan.core.observation.Observation;
 import org.eclipse.leshan.server.registration.ExpirationListener;
 import org.eclipse.leshan.server.registration.Registration;
 import org.eclipse.leshan.server.registration.RegistrationListener;
-import org.eclipse.leshan.server.registration.RegistrationStore;
 import org.eclipse.leshan.server.registration.RegistrationUpdate;
 import org.eclipse.leshan.server.registration.RemoteRegistrationService;
+import org.eclipse.leshan.server.registration.RemoteRegistrationStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An implementation of {@link RemoteRegistrationService}
@@ -35,31 +38,40 @@ public class RemoteRegistrationServiceImpl implements RemoteRegistrationService,
 
     private final List<RegistrationListener> listeners = new CopyOnWriteArrayList<>();
 
-    private RegistrationStore store;
+    private RemoteRegistrationStore store;
 
-    public RemoteRegistrationServiceImpl(RegistrationStore store) {
+    private static final Logger LOG = LoggerFactory.getLogger(RemoteRegistrationServiceImpl.class);
+
+    public RemoteRegistrationServiceImpl(RemoteRegistrationStore store) {
         this.store = store;
-        store.setExpirationListener(this);
+        try {
+            store.setExpirationListener(this);
+        } catch (RemoteException e) {
+            LOG.error("Failed to set expiration listener via RMI", e);
+        }
     }
 
+    @Override
     public void addListener(RegistrationListener listener) {
         listeners.add(listener);
     }
 
+    @Override
     public void removeListener(RegistrationListener listener) {
         listeners.remove(listener);
     }
 
-    public Iterator<Registration> getAllRegistrations() {
+    @Override
+    public Iterator<Registration> getAllRegistrations() throws RemoteException {
         return store.getAllRegistrations();
     }
 
-    public Registration getByEndpoint(String endpoint) {
+    @Override
+    public Registration getByEndpoint(String endpoint) throws RemoteException {
         return store.getRegistrationByEndpoint(endpoint);
     }
 
-    @Override
-    public Registration getById(String id) {
+    public Registration getById(String id) throws RemoteException {
         return store.getRegistration(id);
     }
 
@@ -70,7 +82,6 @@ public class RemoteRegistrationServiceImpl implements RemoteRegistrationService,
         }
     }
 
-    @Override
     public void fireRegistered(Registration registration, Registration previousReg,
             Collection<Observation> previousObsersations) {
         for (RegistrationListener l : listeners) {
@@ -78,14 +89,12 @@ public class RemoteRegistrationServiceImpl implements RemoteRegistrationService,
         }
     }
 
-    @Override
     public void fireUnregistered(Registration registration, Collection<Observation> observations, Registration newReg) {
         for (RegistrationListener l : listeners) {
             l.unregistered(registration, observations, false, newReg);
         }
     }
 
-    @Override
     public void fireUpdated(RegistrationUpdate update, Registration updatedRegistration,
             Registration previousRegistration) {
         for (RegistrationListener l : listeners) {
@@ -93,8 +102,7 @@ public class RemoteRegistrationServiceImpl implements RemoteRegistrationService,
         }
     }
 
-    @Override
-    public RegistrationStore getStore() {
+    public RemoteRegistrationStore getStore() {
         return store;
     }
 }
