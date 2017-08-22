@@ -24,10 +24,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.eclipse.leshan.core.observation.Observation;
 import org.eclipse.leshan.server.registration.ExpirationListener;
 import org.eclipse.leshan.server.registration.Registration;
-import org.eclipse.leshan.server.registration.RegistrationListener;
+import org.eclipse.leshan.server.registration.RegistrationStore;
 import org.eclipse.leshan.server.registration.RegistrationUpdate;
+import org.eclipse.leshan.server.registration.RemoteRegistrationListener;
 import org.eclipse.leshan.server.registration.RemoteRegistrationService;
-import org.eclipse.leshan.server.registration.RemoteRegistrationStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,28 +36,24 @@ import org.slf4j.LoggerFactory;
  */
 public class RemoteRegistrationServiceImpl implements RemoteRegistrationService, ExpirationListener {
 
-    private final List<RegistrationListener> listeners = new CopyOnWriteArrayList<>();
+    private final List<RemoteRegistrationListener> listeners = new CopyOnWriteArrayList<>();
 
-    private RemoteRegistrationStore store;
+    private RegistrationStore store;
 
     private static final Logger LOG = LoggerFactory.getLogger(RemoteRegistrationServiceImpl.class);
 
-    public RemoteRegistrationServiceImpl(RemoteRegistrationStore store) {
+    public RemoteRegistrationServiceImpl(RegistrationStore store) {
         this.store = store;
-        try {
-            store.setExpirationListener(this);
-        } catch (RemoteException e) {
-            LOG.error("Failed to set expiration listener via RMI", e);
-        }
+        store.setExpirationListener(this);
     }
 
     @Override
-    public void addListener(RegistrationListener listener) {
+    public void addListener(RemoteRegistrationListener listener) {
         listeners.add(listener);
     }
 
     @Override
-    public void removeListener(RegistrationListener listener) {
+    public void removeListener(RemoteRegistrationListener listener) {
         listeners.remove(listener);
     }
 
@@ -71,38 +67,54 @@ public class RemoteRegistrationServiceImpl implements RemoteRegistrationService,
         return store.getRegistrationByEndpoint(endpoint);
     }
 
-    public Registration getById(String id) throws RemoteException {
+    public Registration getById(String id) {
         return store.getRegistration(id);
     }
 
     @Override
     public void registrationExpired(Registration registration, Collection<Observation> observations) {
-        for (RegistrationListener l : listeners) {
-            l.unregistered(registration, observations, true, null);
+        try {
+            for (RemoteRegistrationListener l : listeners) {
+                l.unregistered(registration, observations, true, null);
+            }
+        } catch (RemoteException e) {
+            LOG.error("Failed to fire expired via RMI", e);
         }
     }
 
     public void fireRegistered(Registration registration, Registration previousReg,
             Collection<Observation> previousObsersations) {
-        for (RegistrationListener l : listeners) {
-            l.registered(registration, previousReg, previousObsersations);
+        try {
+            for (RemoteRegistrationListener l : listeners) {
+                l.registered(registration, previousReg, previousObsersations);
+            }
+        } catch (RemoteException e) {
+            LOG.error("Failed to fire registered via RMI", e);
         }
     }
 
     public void fireUnregistered(Registration registration, Collection<Observation> observations, Registration newReg) {
-        for (RegistrationListener l : listeners) {
-            l.unregistered(registration, observations, false, newReg);
+        try {
+            for (RemoteRegistrationListener l : listeners) {
+                l.unregistered(registration, observations, false, newReg);
+            }
+        } catch (RemoteException e) {
+            LOG.error("Failed to fire unregistered via RMI", e);
         }
     }
 
     public void fireUpdated(RegistrationUpdate update, Registration updatedRegistration,
             Registration previousRegistration) {
-        for (RegistrationListener l : listeners) {
-            l.updated(update, updatedRegistration, previousRegistration);
+        try {
+            for (RemoteRegistrationListener l : listeners) {
+                l.updated(update, updatedRegistration, previousRegistration);
+            }
+        } catch (RemoteException e) {
+            LOG.error("Failed to fire updated via RMI", e);
         }
     }
 
-    public RemoteRegistrationStore getStore() {
+    public RegistrationStore getStore() {
         return store;
     }
 }

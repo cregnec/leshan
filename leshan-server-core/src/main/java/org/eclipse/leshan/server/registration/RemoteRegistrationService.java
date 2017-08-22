@@ -45,12 +45,13 @@ public interface RemoteRegistrationService extends Remote {
      * 
      * @param listener
      */
-    void addListener(RegistrationListener listener) throws RemoteException;
+    void addListener(RemoteRegistrationListener listener) throws RemoteException;
 
     /**
      * Removes a client registration listener.
      * 
      * @param listener the listener to be removed
      */
-    void removeListener(RegistrationListener listener) throws RemoteException;
+    void removeListener(RemoteRegistrationListener listener) throws RemoteException;
+
 }
