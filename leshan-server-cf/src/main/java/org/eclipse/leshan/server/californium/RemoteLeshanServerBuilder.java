@@ -34,8 +34,8 @@ import org.eclipse.leshan.core.node.codec.LwM2mNodeEncoder;
 import org.eclipse.leshan.core.observation.Observation;
 import org.eclipse.leshan.server.LwM2mServer;
 import org.eclipse.leshan.server.californium.impl.InMemoryRegistrationStore;
+import org.eclipse.leshan.server.californium.impl.LwM2mPskStore;
 import org.eclipse.leshan.server.californium.impl.RemoteLeshanServer;
-import org.eclipse.leshan.server.californium.impl.RemoteLwM2mPskStore;
 import org.eclipse.leshan.server.californium.impl.RemoteObservationServiceImpl;
 import org.eclipse.leshan.server.impl.InMemorySecurityStore;
 import org.eclipse.leshan.server.impl.RemoteRegistrationServiceImpl;
@@ -61,7 +61,7 @@ public class RemoteLeshanServerBuilder {
 
     private static final Logger LOG = LoggerFactory.getLogger(RemoteLeshanServerBuilder.class);
 
-    private RemoteCaliforniumRegistrationStore registrationStore;
+    private CaliforniumRegistrationStore registrationStore;
     private RemoteRegistrationServiceImpl registrationService;
     private RemoteObservationServiceImpl observationService;
     private SecurityStore securityStore;
@@ -153,7 +153,7 @@ public class RemoteLeshanServerBuilder {
      * By default the {@link InMemoryRegistrationStore} implementation is used.
      * 
      */
-    public RemoteLeshanServerBuilder setRegistrationStore(RemoteCaliforniumRegistrationStore registrationStore) {
+    public RemoteLeshanServerBuilder setRegistrationStore(CaliforniumRegistrationStore registrationStore) {
         this.registrationStore = registrationStore;
         return this;
     }
@@ -300,7 +300,8 @@ public class RemoteLeshanServerBuilder {
         if (localAddress == null)
             localAddress = new InetSocketAddress(LwM2m.DEFAULT_COAP_PORT);
         // TODO keep this registrationStore while it is being used by observationService
-        assert (registrationStore != null);
+        if (registrationStore == null)
+            registrationStore = new InMemoryRegistrationStore();
         /*
          * if (registrationService == null) registrationService = new RemoteRegistrationServiceImpl(registrationStore);
          */
@@ -332,7 +333,7 @@ public class RemoteLeshanServerBuilder {
             DtlsConnectorConfig incompleteConfig = dtlsConfigBuilder.getIncompleteConfig();
             // Handle PSK Store
             if (incompleteConfig.getPskStore() == null) {
-                dtlsConfigBuilder.setPskStore(new RemoteLwM2mPskStore(this.securityStore, registrationStore));
+                dtlsConfigBuilder.setPskStore(new LwM2mPskStore(this.securityStore, registrationStore));
             } else {
                 LOG.warn(
                         "PskStore should be automatically set by Leshan. Using a custom implementation is not advised.");
