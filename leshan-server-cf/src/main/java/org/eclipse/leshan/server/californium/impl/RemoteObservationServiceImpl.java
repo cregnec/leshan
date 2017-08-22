@@ -42,10 +42,9 @@ import org.eclipse.leshan.core.request.ContentFormat;
 import org.eclipse.leshan.core.request.exception.InvalidResponseException;
 import org.eclipse.leshan.core.response.ObserveResponse;
 import org.eclipse.leshan.server.californium.CaliforniumRegistrationStore;
-import org.eclipse.leshan.server.californium.RemoteCaliforniumRegistrationStore;
 import org.eclipse.leshan.server.model.LwM2mModelProvider;
-import org.eclipse.leshan.server.observation.ObservationListener;
 import org.eclipse.leshan.server.observation.ObservationService;
+import org.eclipse.leshan.server.observation.RemoteObservationListener;
 import org.eclipse.leshan.server.observation.RemoteObservationService;
 import org.eclipse.leshan.server.registration.Registration;
 import org.eclipse.leshan.util.Hex;
@@ -62,22 +61,22 @@ public class RemoteObservationServiceImpl implements RemoteObservationService, N
 
     private final Logger LOG = LoggerFactory.getLogger(RemoteObservationServiceImpl.class);
 
-    private final RemoteCaliforniumRegistrationStore registrationStore;
+    private final CaliforniumRegistrationStore registrationStore;
     private final LwM2mModelProvider modelProvider;
     private final LwM2mNodeDecoder decoder;
     private Endpoint secureEndpoint;
     private Endpoint nonSecureEndpoint;
 
-    private final List<ObservationListener> listeners = new CopyOnWriteArrayList<>();
+    private final List<RemoteObservationListener> listeners = new CopyOnWriteArrayList<>();
 
     /**
      * Creates an instance of {@link RemoteObservationServiceImpl}
      * 
-     * @param store instance of californium's {@link ObservationStore}
+     * @param store instance of californium's {@link RemoteObservationStore}
      * @param modelProvider instance of {@link LwM2mModelProvider}
      * @param decoder instance of {@link LwM2mNodeDecoder}
      */
-    public RemoteObservationServiceImpl(RemoteCaliforniumRegistrationStore store, LwM2mModelProvider modelProvider,
+    public RemoteObservationServiceImpl(CaliforniumRegistrationStore store, LwM2mModelProvider modelProvider,
             LwM2mNodeDecoder decoder) {
         this.registrationStore = store;
         this.modelProvider = modelProvider;
@@ -90,7 +89,7 @@ public class RemoteObservationServiceImpl implements RemoteObservationService, N
             cancel(existing);
         }
 
-        for (ObservationListener listener : listeners) {
+        for (RemoteObservationListener listener : listeners) {
             listener.newObservation(observation, registration);
         }
     }
@@ -147,9 +146,12 @@ public class RemoteObservationServiceImpl implements RemoteObservationService, N
             secureEndpoint.cancelObservation(observation.getId());
         if (nonSecureEndpoint != null)
             nonSecureEndpoint.cancelObservation(observation.getId());
-
-        for (ObservationListener listener : listeners) {
-            listener.cancelled(observation);
+        try {
+            for (RemoteObservationListener listener : listeners) {
+                listener.cancelled(observation);
+            }
+        } catch (RemoteException e) {
+            LOG.error("Failed to set listener on cancelled vim RMI", e);
         }
     }
 
@@ -189,12 +191,12 @@ public class RemoteObservationServiceImpl implements RemoteObservationService, N
     }
 
     @Override
-    public void addListener(ObservationListener listener) throws RemoteException {
+    public void addListener(RemoteObservationListener listener) throws RemoteException {
         listeners.add(listener);
     }
 
     @Override
-    public void removeListener(ObservationListener listener) throws RemoteException {
+    public void removeListener(RemoteObservationListener listener) throws RemoteException {
         listeners.remove(listener);
     }
 
@@ -212,11 +214,7 @@ public class RemoteObservationServiceImpl implements RemoteObservationService, N
 
         // get observation for this request
         Observation observation = null;
-        try {
-            observation = registrationStore.getObservation(regid, coapResponse.getToken());
-        } catch (RemoteException e1) {
-            LOG.error("Failed to get observation via RMI", e1);
-        }
+        observation = registrationStore.getObservation(regid, coapResponse.getToken());
         if (observation == null) {
             LOG.error("Unexpected error: Unable to find observation with token {} for registration {}", observation,
                     coapResponse.getToken());
@@ -225,11 +223,7 @@ public class RemoteObservationServiceImpl implements RemoteObservationService, N
 
         // get registration
         Registration registration = null;
-        try {
-            registration = registrationStore.getRegistration(observation.getRegistrationId());
-        } catch (RemoteException e1) {
-            LOG.error("Failed to get registration via RMI", e1);
-        }
+        registration = registrationStore.getRegistration(observation.getRegistrationId());
         if (registration == null) {
             LOG.error("Unexpected error: There is no registration with id {} for this observation {}",
                     observation.getRegistrationId(), observation);
@@ -244,24 +238,36 @@ public class RemoteObservationServiceImpl implements RemoteObservationService, N
             ObserveResponse response = createObserveResponse(observation, model, coapResponse);
 
             // notify all listeners
-            for (ObservationListener listener : listeners) {
-                listener.onResponse(observation, registration, response);
+            try {
+                for (RemoteObservationListener listener : listeners) {
+                    listener.onResponse(observation, registration, response);
+                }
+            } catch (RemoteException e) {
+                LOG.error("Failed to configure listener via RMI", e);
             }
+
         } catch (InvalidResponseException e) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug(String.format("Invalid notification for observation [%s]", observation), e);
             }
 
-            for (ObservationListener listener : listeners) {
-                listener.onError(observation, registration, e);
+            try {
+                for (RemoteObservationListener listener : listeners) {
+                    listener.onError(observation, registration, e);
+                }
+            } catch (RemoteException e1) {
+                LOG.error("Failed to configure listener via RMI", e);
             }
         } catch (RuntimeException e) {
             if (LOG.isErrorEnabled()) {
                 LOG.error(String.format("Unable to handle notification for observation [%s]", observation), e);
             }
-
-            for (ObservationListener listener : listeners) {
-                listener.onError(observation, registration, e);
+            try {
+                for (RemoteObservationListener listener : listeners) {
+                    listener.onError(observation, registration, e);
+                }
+            } catch (RemoteException e1) {
+                LOG.error("Failed to configure listener via RMI", e);
             }
         }
 
