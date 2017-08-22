@@ -67,7 +67,7 @@ public interface RemoteObservationService extends Remote {
      */
     Set<Observation> getObservations(Registration registration) throws RemoteException;
 
-    void addListener(ObservationListener listener) throws RemoteException;
+    void addListener(RemoteObservationListener listener) throws RemoteException;
 
-    void removeListener(ObservationListener listener) throws RemoteException;
+    void removeListener(RemoteObservationListener listener) throws RemoteException;
 }
