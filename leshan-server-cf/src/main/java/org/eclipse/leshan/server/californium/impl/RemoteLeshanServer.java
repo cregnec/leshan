@@ -16,7 +16,8 @@
 package org.eclipse.leshan.server.californium.impl;
 
 import java.net.InetSocketAddress;
-import java.util.Collection;
+import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -33,23 +34,21 @@ import org.eclipse.californium.scandium.DTLSConnector;
 import org.eclipse.californium.scandium.config.DtlsConnectorConfig;
 import org.eclipse.leshan.core.node.codec.LwM2mNodeDecoder;
 import org.eclipse.leshan.core.node.codec.LwM2mNodeEncoder;
-import org.eclipse.leshan.core.observation.Observation;
 import org.eclipse.leshan.core.request.DownlinkRequest;
 import org.eclipse.leshan.core.response.ErrorCallback;
 import org.eclipse.leshan.core.response.LwM2mResponse;
 import org.eclipse.leshan.core.response.ResponseCallback;
 import org.eclipse.leshan.server.Destroyable;
+import org.eclipse.leshan.server.RemoteEndpoint;
 import org.eclipse.leshan.server.RemoteLwM2mServer;
 import org.eclipse.leshan.server.Startable;
 import org.eclipse.leshan.server.Stoppable;
+import org.eclipse.leshan.server.californium.CaliforniumRegistrationStore;
 import org.eclipse.leshan.server.californium.LeshanServerBuilder;
-import org.eclipse.leshan.server.californium.RemoteCaliforniumRegistrationStore;
 import org.eclipse.leshan.server.impl.RemoteRegistrationServiceImpl;
 import org.eclipse.leshan.server.model.LwM2mModelProvider;
 import org.eclipse.leshan.server.observation.RemoteObservationService;
 import org.eclipse.leshan.server.registration.Registration;
-import org.eclipse.leshan.server.registration.RegistrationListener;
-import org.eclipse.leshan.server.registration.RegistrationUpdate;
 import org.eclipse.leshan.server.registration.RemoteRegistrationHandler;
 import org.eclipse.leshan.server.registration.RemoteRegistrationService;
 import org.eclipse.leshan.server.request.LwM2mRequestSender;
@@ -93,7 +92,9 @@ public class RemoteLeshanServer implements RemoteLwM2mServer {
 
     private final CoapEndpoint secureEndpoint;
 
-    private final RemoteCaliforniumRegistrationStore registrationStore;
+    private final CaliforniumRegistrationStore registrationStore;
+
+    private final List<RemoteEndpoint> remoteEndpoints = new ArrayList<RemoteEndpoint>();
 
     /**
      * Initialize a server which will bind to the specified address and port.
@@ -108,7 +109,7 @@ public class RemoteLeshanServer implements RemoteLwM2mServer {
      * @param coapConfig the CoAP {@link NetworkConfig}.
      * @param dtlsConfig the DTLS configuration : {@link DtlsConnectorConfig}.
      */
-    public RemoteLeshanServer(InetSocketAddress localAddress, RemoteCaliforniumRegistrationStore registrationStore,
+    public RemoteLeshanServer(InetSocketAddress localAddress, CaliforniumRegistrationStore registrationStore,
             RemoteRegistrationServiceImpl registrationService, RemoteObservationServiceImpl observationService,
             SecurityStore securityStore, Authorizer authorizer, LwM2mModelProvider modelProvider,
             LwM2mNodeEncoder encoder, LwM2mNodeDecoder decoder, NetworkConfig coapConfig,
@@ -129,24 +130,25 @@ public class RemoteLeshanServer implements RemoteLwM2mServer {
         this.modelProvider = modelProvider;
 
         // Cancel observations on client unregistering
-        this.registrationService.addListener(new RegistrationListener() {
-
-            @Override
-            public void updated(RegistrationUpdate update, Registration updatedRegistration,
-                    Registration previousRegistration) {
-            }
-
-            @Override
-            public void unregistered(Registration registration, Collection<Observation> observations, boolean expired,
-                    Registration newReg) {
-                requestSender.cancelPendingRequests(registration);
-            }
-
-            @Override
-            public void registered(Registration registration, Registration previousReg,
-                    Collection<Observation> previousObsersations) {
-            }
-        });
+        // TODO fix this at client side using RemoteRegistrationListener
+        // this.registrationService.addListener(new RegistrationListener() {
+        //
+        // @Override
+        // public void updated(RegistrationUpdate update, Registration updatedRegistration,
+        // Registration previousRegistration) {
+        // }
+        //
+        // @Override
+        // public void unregistered(Registration registration, Collection<Observation> observations, boolean expired,
+        // Registration newReg) {
+        // requestSender.cancelPendingRequests(registration);
+        // }
+        //
+        // @Override
+        // public void registered(Registration registration, Registration previousReg,
+        // Collection<Observation> previousObsersations) {
+        // }
+        // });
 
         // define a set of endpoints
         Set<Endpoint> endpoints = new HashSet<>();
@@ -163,6 +165,10 @@ public class RemoteLeshanServer implements RemoteLwM2mServer {
         observationService.setNonSecureEndpoint(nonSecureEndpoint);
         coapServer.addEndpoint(nonSecureEndpoint);
         endpoints.add(nonSecureEndpoint);
+        // add RemoteEndpoint
+        for (Endpoint e : endpoints) {
+            remoteEndpoints.add(new RemoteEndpointImpl(e));
+        }
 
         // secure endpoint
         if (securityStore != null) {
@@ -239,11 +245,19 @@ public class RemoteLeshanServer implements RemoteLwM2mServer {
     }
 
     @Override
+    public RemoteRegistrationService getRemoteRegistrationService() {
+        return this.registrationService;
+    }
+
     public RemoteRegistrationService getRegistrationService() {
         return this.registrationService;
     }
 
     @Override
+    public RemoteObservationService getRemoteObservationService() {
+        return this.observationService;
+    }
+
     public RemoteObservationService getObservationService() {
         return this.observationService;
     }
@@ -295,6 +309,20 @@ public class RemoteLeshanServer implements RemoteLwM2mServer {
         }
     }
 
+    @Override
+    public int getSecurePort() throws RemoteException {
+        return getSecureAddress().getPort();
+    }
+
+    @Override
+    public List<RemoteEndpoint> getRemoteEndpoints() {
+        return remoteEndpoints;
+    }
+
+    public List<RemoteEndpoint> getEndpoints() {
+        return remoteEndpoints;
+    }
+
     /**
      * The Leshan Root Resource.
      */
@@ -314,4 +342,5 @@ public class RemoteLeshanServer implements RemoteLwM2mServer {
             return coapServer.getEndpoints();
         }
     }
+
 }
