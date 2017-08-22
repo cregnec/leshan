@@ -23,7 +23,7 @@ Contributors:
         <version>1.0.0-SNAPSHOT</version>
     </parent>
     <artifactId>leshan-server-client-demo</artifactId>
-    <name>leshan - server demo</name>
+    <name>leshan - server client demo</name>
     <description>A LWM2M demonstration server running an embedded Jetty server</description>
 
     <dependencies>
@@ -34,6 +34,7 @@ Contributors:
             <version>3.5.2</version>
         </dependency>
 
+
         <dependency>
             <groupId>org.eclipse.leshan</groupId>
             <artifactId>leshan-server-cf</artifactId>
@@ -41,6 +42,10 @@ Contributors:
         <dependency>
             <groupId>org.eclipse.leshan</groupId>
             <artifactId>leshan-server-cluster</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.leshan</groupId>
+            <artifactId>leshan-server-core</artifactId>
         </dependency>
         <dependency>
             <groupId>commons-cli</groupId>
@@ -65,6 +70,12 @@ Contributors:
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-continuation</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.leshan</groupId>
+            <artifactId>leshan-server-demo</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -104,7 +115,7 @@ Contributors:
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>org.eclipse.leshan.server.demo.RemoteLeshanClientDemo</mainClass>
+                            <mainClass>org.eclipse.leshan.server.client.demo.RemoteLeshanClientDemo</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
