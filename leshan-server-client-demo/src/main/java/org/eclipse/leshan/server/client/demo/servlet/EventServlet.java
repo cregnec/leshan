@@ -16,6 +16,8 @@
 package org.eclipse.leshan.server.client.demo.servlet;
 
 import java.io.IOException;
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -23,22 +25,23 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.leshan.core.node.LwM2mNode;
 import org.eclipse.leshan.core.observation.Observation;
 import org.eclipse.leshan.core.response.ObserveResponse;
-import org.eclipse.leshan.server.californium.impl.LeshanServer;
+import org.eclipse.leshan.server.RemoteEndpoint;
+import org.eclipse.leshan.server.RemoteLwM2mServer;
+import org.eclipse.leshan.server.RemoteMessageInterceptor;
 import org.eclipse.leshan.server.client.demo.servlet.json.LwM2mNodeSerializer;
 import org.eclipse.leshan.server.client.demo.servlet.json.RegistrationSerializer;
 import org.eclipse.leshan.server.client.demo.servlet.log.CoapMessage;
 import org.eclipse.leshan.server.client.demo.servlet.log.CoapMessageListener;
-import org.eclipse.leshan.server.client.demo.servlet.log.CoapMessageTracer;
+import org.eclipse.leshan.server.client.demo.servlet.log.RemoteCoapMessageTracer;
 import org.eclipse.leshan.server.client.demo.utils.EventSource;
 import org.eclipse.leshan.server.client.demo.utils.EventSourceServlet;
-import org.eclipse.leshan.server.observation.ObservationListener;
+import org.eclipse.leshan.server.observation.RemoteObservationListener;
 import org.eclipse.leshan.server.registration.Registration;
-import org.eclipse.leshan.server.registration.RegistrationListener;
 import org.eclipse.leshan.server.registration.RegistrationUpdate;
+import org.eclipse.leshan.server.registration.RemoteRegistrationListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,12 +68,12 @@ public class EventServlet extends EventSourceServlet {
 
     private final Gson gson;
 
-    private final CoapMessageTracer coapMessageTracer;
+    private final RemoteCoapMessageTracer coapMessageTracer;
 
     private Set<LeshanEventSource> eventSources = Collections
             .newSetFromMap(new ConcurrentHashMap<LeshanEventSource, Boolean>());
 
-    private final RegistrationListener registrationListener = new RegistrationListener() {
+    private final RemoteRegistrationListener registrationListener = new RemoteRegistrationListener() {
 
         @Override
         public void registered(Registration registration, Registration previousReg,
@@ -94,7 +97,7 @@ public class EventServlet extends EventSourceServlet {
         }
     };
 
-    private final ObservationListener observationListener = new ObservationListener() {
+    private final RemoteObservationListener observationListener = new RemoteObservationListener() {
 
         @Override
         public void cancelled(Observation observation) {
@@ -129,15 +132,29 @@ public class EventServlet extends EventSourceServlet {
         }
     };
 
-    public EventServlet(LeshanServer server, int securePort) {
-        server.getRegistrationService().addListener(this.registrationListener);
-        server.getObservationService().addListener(this.observationListener);
+    public EventServlet(RemoteLwM2mServer server, int securePort) {
+        RemoteCoapMessageTracer tempTracer = null;
+        try {
+            RemoteRegistrationListener registrationListenerStub = (RemoteRegistrationListener) UnicastRemoteObject
+                    .exportObject(this.registrationListener, 0);
+            server.getRemoteRegistrationService().addListener(registrationListenerStub);
 
-        // add an interceptor to each endpoint to trace all CoAP messages
-        coapMessageTracer = new CoapMessageTracer(server.getRegistrationService());
-        for (Endpoint endpoint : server.getCoapServer().getEndpoints()) {
-            endpoint.addInterceptor(coapMessageTracer);
+            RemoteObservationListener observationListenerStub = (RemoteObservationListener) UnicastRemoteObject
+                    .exportObject(this.observationListener, 0);
+            server.getRemoteObservationService().addListener(observationListenerStub);
+
+            // add an interceptor to each endpoint to trace all CoAP messages
+            tempTracer = new RemoteCoapMessageTracer(server.getRemoteRegistrationService());
+            // export interceptor via RMI
+            RemoteMessageInterceptor coapMesageTracerStub = (RemoteMessageInterceptor) UnicastRemoteObject
+                    .exportObject(tempTracer, 0);
+            for (RemoteEndpoint endpoint : server.getRemoteEndpoints()) {
+                endpoint.addInterceptor(tempTracer);
+            }
+        } catch (RemoteException e) {
+            LOG.error("Failed to add listeners vim RMI", e);
         }
+        coapMessageTracer = tempTracer;
 
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeHierarchyAdapter(Registration.class, new RegistrationSerializer(securePort));
