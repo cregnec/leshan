@@ -16,6 +16,7 @@
 package org.eclipse.leshan.server.impl;
 
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -58,8 +59,12 @@ public class RemoteRegistrationServiceImpl implements RemoteRegistrationService,
     }
 
     @Override
-    public Iterator<Registration> getAllRegistrations() throws RemoteException {
-        return store.getAllRegistrations();
+    public List<Registration> getAllRegistrations() throws RemoteException {
+        List<Registration> registrations = new ArrayList<Registration>();
+        for (Iterator<Registration> iterator = store.getAllRegistrations(); iterator.hasNext();) {
+            registrations.add(iterator.next());
+        }
+        return registrations;
     }
 
     @Override

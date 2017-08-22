@@ -17,7 +17,7 @@ package org.eclipse.leshan.server.registration;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.util.Iterator;
+import java.util.List;
 
 /**
  * A service to access registered clients
@@ -33,12 +33,11 @@ public interface RemoteRegistrationService extends Remote {
     Registration getByEndpoint(String endpoint) throws RemoteException;
 
     /**
-     * Returns an iterator over all registrations. There are no guarantees concerning the order in which the elements
-     * are returned.
+     * Returns an List of all registrations. This is necessary in order to pass them over RMI.
      *
-     * @return an <tt>Iterator</tt> over registrations
+     * @return an <tt>List</tt> over registrations
      */
-    Iterator<Registration> getAllRegistrations() throws RemoteException;
+    List<Registration> getAllRegistrations() throws RemoteException;
 
     /**
      * Adds a new listener to be notified with client registration events.

@@ -17,9 +17,7 @@ package org.eclipse.leshan.server.client.demo.servlet;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -53,7 +51,7 @@ import org.eclipse.leshan.core.response.LwM2mResponse;
 import org.eclipse.leshan.core.response.ObserveResponse;
 import org.eclipse.leshan.core.response.ReadResponse;
 import org.eclipse.leshan.core.response.WriteResponse;
-import org.eclipse.leshan.server.LwM2mServer;
+import org.eclipse.leshan.server.RemoteLwM2mServer;
 import org.eclipse.leshan.server.client.demo.servlet.json.LwM2mNodeDeserializer;
 import org.eclipse.leshan.server.client.demo.servlet.json.LwM2mNodeSerializer;
 import org.eclipse.leshan.server.client.demo.servlet.json.RegistrationSerializer;
@@ -79,11 +77,11 @@ public class ClientServlet extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
 
-    private final LwM2mServer server;
+    private final RemoteLwM2mServer server;
 
     private final Gson gson;
 
-    public ClientServlet(LwM2mServer server, int securePort) {
+    public ClientServlet(RemoteLwM2mServer server, int securePort) {
         this.server = server;
 
         GsonBuilder gsonBuilder = new GsonBuilder();
@@ -103,13 +101,9 @@ public class ClientServlet extends HttpServlet {
 
         // all registered clients
         if (req.getPathInfo() == null) {
-            Collection<Registration> registrations = new ArrayList<>();
-            for (Iterator<Registration> iterator = server.getRegistrationService().getAllRegistrations(); iterator
-                    .hasNext();) {
-                registrations.add(iterator.next());
-            }
+            List<Registration> registrations = server.getRemoteRegistrationService().getAllRegistrations();
 
-            String json = this.gson.toJson(registrations.toArray(new Registration[] {}));
+            String json = this.gson.toJson(registrations);
             resp.setContentType("application/json");
             resp.getOutputStream().write(json.getBytes(StandardCharsets.UTF_8));
             resp.setStatus(HttpServletResponse.SC_OK);
@@ -125,7 +119,7 @@ public class ClientServlet extends HttpServlet {
 
         // /endPoint : get client
         if (path.length == 1) {
-            Registration registration = server.getRegistrationService().getByEndpoint(clientEndpoint);
+            Registration registration = server.getRemoteRegistrationService().getByEndpoint(clientEndpoint);
             if (registration != null) {
                 resp.setContentType("application/json");
                 resp.getOutputStream().write(this.gson.toJson(registration).getBytes(StandardCharsets.UTF_8));
@@ -141,7 +135,7 @@ public class ClientServlet extends HttpServlet {
         if (path.length >= 3 && "discover".equals(path[path.length - 1])) {
             String target = StringUtils.substringBetween(req.getPathInfo(), clientEndpoint, "/discover");
             try {
-                Registration registration = server.getRegistrationService().getByEndpoint(clientEndpoint);
+                Registration registration = server.getRemoteRegistrationService().getByEndpoint(clientEndpoint);
                 if (registration != null) {
                     // create & process request
                     DiscoverRequest request = new DiscoverRequest(target);
@@ -160,7 +154,7 @@ public class ClientServlet extends HttpServlet {
         // /clients/endPoint/LWRequest : do LightWeight M2M read request on a given client.
         try {
             String target = StringUtils.removeStart(req.getPathInfo(), "/" + clientEndpoint);
-            Registration registration = server.getRegistrationService().getByEndpoint(clientEndpoint);
+            Registration registration = server.getRemoteRegistrationService().getByEndpoint(clientEndpoint);
             if (registration != null) {
                 // get content format
                 String contentFormatParam = req.getParameter(FORMAT_PARAM);
@@ -225,7 +219,7 @@ public class ClientServlet extends HttpServlet {
 
         try {
             String target = StringUtils.removeStart(req.getPathInfo(), "/" + clientEndpoint);
-            Registration registration = server.getRegistrationService().getByEndpoint(clientEndpoint);
+            Registration registration = server.getRemoteRegistrationService().getByEndpoint(clientEndpoint);
             if (registration != null) {
                 // get content format
                 String contentFormatParam = req.getParameter(FORMAT_PARAM);
@@ -259,7 +253,7 @@ public class ClientServlet extends HttpServlet {
         if (path.length >= 3 && "observe".equals(path[path.length - 1])) {
             try {
                 String target = StringUtils.substringBetween(req.getPathInfo(), clientEndpoint, "/observe");
-                Registration registration = server.getRegistrationService().getByEndpoint(clientEndpoint);
+                Registration registration = server.getRemoteRegistrationService().getByEndpoint(clientEndpoint);
                 if (registration != null) {
                     // get content format
                     String contentFormatParam = req.getParameter(FORMAT_PARAM);
@@ -286,7 +280,7 @@ public class ClientServlet extends HttpServlet {
         // /clients/endPoint/LWRequest : do LightWeight M2M execute request on a given client.
         if (path.length == 4) {
             try {
-                Registration registration = server.getRegistrationService().getByEndpoint(clientEndpoint);
+                Registration registration = server.getRemoteRegistrationService().getByEndpoint(clientEndpoint);
                 if (registration != null) {
                     ExecuteRequest request = new ExecuteRequest(target, IOUtils.toString(req.getInputStream()));
                     ExecuteResponse cResponse = server.send(registration, request, TIMEOUT);
@@ -304,7 +298,7 @@ public class ClientServlet extends HttpServlet {
         // /clients/endPoint/LWRequest : do LightWeight M2M create request on a given client.
         if (2 <= path.length && path.length <= 3) {
             try {
-                Registration registration = server.getRegistrationService().getByEndpoint(clientEndpoint);
+                Registration registration = server.getRemoteRegistrationService().getByEndpoint(clientEndpoint);
                 if (registration != null) {
                     // get content format
                     String contentFormatParam = req.getParameter(FORMAT_PARAM);
@@ -341,9 +335,9 @@ public class ClientServlet extends HttpServlet {
         if (path.length >= 3 && "observe".equals(path[path.length - 1])) {
             try {
                 String target = StringUtils.substringsBetween(req.getPathInfo(), clientEndpoint, "/observe")[0];
-                Registration registration = server.getRegistrationService().getByEndpoint(clientEndpoint);
+                Registration registration = server.getRemoteRegistrationService().getByEndpoint(clientEndpoint);
                 if (registration != null) {
-                    server.getObservationService().cancelObservations(registration, target);
+                    server.getRemoteObservationService().cancelObservations(registration, target);
                     resp.setStatus(HttpServletResponse.SC_OK);
                 } else {
                     resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -358,7 +352,7 @@ public class ClientServlet extends HttpServlet {
         // /clients/endPoint/LWRequest/ : delete instance
         try {
             String target = StringUtils.removeStart(req.getPathInfo(), "/" + clientEndpoint);
-            Registration registration = server.getRegistrationService().getByEndpoint(clientEndpoint);
+            Registration registration = server.getRemoteRegistrationService().getByEndpoint(clientEndpoint);
             if (registration != null) {
                 DeleteRequest request = new DeleteRequest(target);
                 DeleteResponse cResponse = server.send(registration, request, TIMEOUT);

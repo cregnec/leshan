@@ -34,6 +34,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.leshan.LwM2m;
 import org.eclipse.leshan.server.RemoteLwM2mServer;
+import org.eclipse.leshan.server.client.demo.servlet.ClientServlet;
 import org.eclipse.leshan.server.client.demo.servlet.EventServlet;
 import org.eclipse.leshan.server.registration.RemoteRegistrationService;
 import org.slf4j.Logger;
@@ -213,10 +214,10 @@ public class RemoteLeshanClientDemo {
         EventServlet eventServlet = new EventServlet(lwServer, lwServer.getSecurePort());
         ServletHolder eventServletHolder = new ServletHolder(eventServlet);
         root.addServlet(eventServletHolder, "/event/*");
-        //
-        // ServletHolder clientServletHolder = new ServletHolder( new ClientServlet(lwServer,
-        // lwServer.getSecureAddress().getPort())); root.addServlet(clientServletHolder, "/api/clients/*");
-        //
+
+        ServletHolder clientServletHolder = new ServletHolder(new ClientServlet(lwServer, lwServer.getSecurePort()));
+        root.addServlet(clientServletHolder, "/api/clients/*");
+
         // ServletHolder securityServletHolder = new ServletHolder(new SecurityServlet(securityStore, publicKey));
         // root.addServlet(securityServletHolder, "/api/security/*");
         //
