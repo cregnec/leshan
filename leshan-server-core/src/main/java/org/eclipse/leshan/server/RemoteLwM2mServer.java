@@ -16,6 +16,8 @@
 package org.eclipse.leshan.server;
 
 import java.rmi.Remote;
+import java.rmi.RemoteException;
+import java.util.List;
 
 import org.eclipse.leshan.core.node.codec.CodecException;
 import org.eclipse.leshan.core.request.DownlinkRequest;
@@ -58,8 +60,9 @@ public interface RemoteLwM2mServer extends Remote {
      * @throws RequestCanceledException if the request is cancelled.
      * @throws InvalidResponseException if the response received is malformed.
      */
-    <T extends LwM2mResponse> T send(Registration destination, DownlinkRequest<T> request) throws InterruptedException,
-            CodecException, InvalidResponseException, RequestCanceledException, RequestRejectedException;
+    <T extends LwM2mResponse> T send(Registration destination, DownlinkRequest<T> request)
+            throws InterruptedException, CodecException, InvalidResponseException, RequestCanceledException,
+            RequestRejectedException, RemoteException;
 
     /**
      * Sends a Lightweight M2M request synchronously. Will block until a response is received from the remote client.
@@ -77,7 +80,7 @@ public interface RemoteLwM2mServer extends Remote {
      */
     <T extends LwM2mResponse> T send(Registration destination, DownlinkRequest<T> request, long timeout)
             throws InterruptedException, CodecException, InvalidResponseException, RequestCanceledException,
-            RequestRejectedException;
+            RequestRejectedException, RemoteException;
 
     /**
      * Sends a Lightweight M2M request asynchronously.
@@ -97,28 +100,35 @@ public interface RemoteLwM2mServer extends Remote {
      * @throws CodecException if request payload can not be encoded.
      */
     <T extends LwM2mResponse> void send(Registration destination, DownlinkRequest<T> request,
-            ResponseCallback<T> responseCallback, ErrorCallback errorCallback) throws CodecException;
+            ResponseCallback<T> responseCallback, ErrorCallback errorCallback) throws CodecException, RemoteException;
 
     /**
      * Get the registration service to access to registered clients. You can use this object for listening client
      * registration lifecycle.
      */
-    RemoteRegistrationService getRegistrationService();
+    RemoteRegistrationService getRemoteRegistrationService() throws RemoteException;
 
     /**
      * Get the Observation service to access current observations. You can use this object for listening resource
      * observation or cancel it.
      */
-    RemoteObservationService getObservationService();
+    RemoteObservationService getRemoteObservationService() throws RemoteException;
 
     /**
      * Get the SecurityStore containing of security information.
      */
-    SecurityStore getSecurityStore();
+    SecurityStore getSecurityStore() throws RemoteException;
 
     /**
      * Get the provider in charge of retrieving the object definitions for each client.
      */
-    LwM2mModelProvider getModelProvider();
+    LwM2mModelProvider getModelProvider() throws RemoteException;
+
+    /**
+     * Get the secure port of the server.
+     */
+    int getSecurePort() throws RemoteException;
+
+    List<RemoteEndpoint> getRemoteEndpoints() throws RemoteException;
 
 }
