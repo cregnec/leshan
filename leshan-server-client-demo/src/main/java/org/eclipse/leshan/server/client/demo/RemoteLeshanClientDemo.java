@@ -22,7 +22,6 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
 import java.security.KeyStore;
 
 import org.apache.commons.cli.CommandLine;
@@ -30,11 +29,13 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.leshan.LwM2m;
-import org.eclipse.leshan.server.californium.RemoteCaliforniumRegistrationStore;
-import org.eclipse.leshan.server.californium.impl.RemoteInMemoryRegistrationStore;
-import org.eclipse.leshan.server.californium.impl.RemoteLeshanServer;
-import org.eclipse.leshan.server.demo.RemoteConfiguration;
+import org.eclipse.leshan.server.RemoteLwM2mServer;
+import org.eclipse.leshan.server.client.demo.servlet.EventServlet;
+import org.eclipse.leshan.server.registration.RemoteRegistrationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,8 +74,6 @@ public class RemoteLeshanClientDemo {
     private final static String DEFAULT_KEYSTORE_TYPE = KeyStore.getDefaultType();
 
     private final static String DEFAULT_KEYSTORE_ALIAS = "leshan";
-
-    private static RemoteCaliforniumRegistrationStore registrationStore;
 
     public static void main(String[] args) {
         // Define options for command line tools
@@ -177,39 +176,43 @@ public class RemoteLeshanClientDemo {
     }
 
     public static void createAndStartServer(int webPort) throws Exception {
-
-        registrationStore = new RemoteInMemoryRegistrationStore();
+        RemoteLwM2mServer lwServer = null;
+        RemoteRegistrationService rmtRegistrationService = null;
 
         try {
             LOG.info("Getting RMI registry");
             Registry registry = LocateRegistry.getRegistry();
 
-            RemoteConfiguration rmtConfig = (RemoteConfiguration) registry.lookup(RemoteConfiguration.LOOKUPNAME);
+            // RemoteConfiguration rmtConfig = (RemoteConfiguration) registry.lookup(RemoteConfiguration.LOOKUPNAME);
 
-            LOG.info("Getting RemoteLeshanServer");
-            RemoteLeshanServer lwServer = (RemoteLeshanServer) registry.lookup(RemoteLeshanServer.LOOKUPNAME);
+            // LOG.info("Getting RemoteLeshanServer");
+            lwServer = (RemoteLwM2mServer) registry.lookup(RemoteLwM2mServer.LOOKUPNAME);
+            rmtRegistrationService = lwServer.getRemoteRegistrationService();
 
-            LOG.info("Setting registration service");
-            RemoteCaliforniumRegistrationStore stub = (RemoteCaliforniumRegistrationStore) UnicastRemoteObject
-                    .exportObject(registrationStore, 0);
-            rmtConfig.setRegistrationStore(stub);
+            // LOG.info("Setting registration service");
+            // RemoteCaliforniumRegistrationStore stub = (RemoteCaliforniumRegistrationStore) UnicastRemoteObject
+            // .exportObject(registrationStore, 0);
+            // rmtConfig.setRegistrationStore(stub);
 
         } catch (RemoteException e) {
             LOG.error("Failed to get RMI registry", e);
         } catch (NotBoundException e) {
             LOG.error("Failed to lookup RMI object", e);
         }
+
         // Now prepare Jetty
 
-        // Server server = new Server(webPort);
-        // WebAppContext root = new WebAppContext(); root.setContextPath("/");
-        // root.setResourceBase(LeshanServerDemo.class.getClassLoader().getResource("webapp").toExternalForm());
-        // root.setParentLoaderPriority(true); server.setHandler(root);
-        //
-        // // Create Servlet
-        // EventServlet eventServlet = new EventServlet(lwServer, lwServer.getSecureAddress().getPort());
-        // ServletHolder eventServletHolder = new ServletHolder(eventServlet);
-        // root.addServlet(eventServletHolder, "/event/*");
+        Server server = new Server(webPort);
+        WebAppContext root = new WebAppContext();
+        root.setContextPath("/");
+        root.setResourceBase(RemoteLeshanClientDemo.class.getClassLoader().getResource("webapp").toExternalForm());
+        root.setParentLoaderPriority(true);
+        server.setHandler(root);
+
+        // Create Servlet
+        EventServlet eventServlet = new EventServlet(lwServer, lwServer.getSecurePort());
+        ServletHolder eventServletHolder = new ServletHolder(eventServlet);
+        root.addServlet(eventServletHolder, "/event/*");
         //
         // ServletHolder clientServletHolder = new ServletHolder( new ClientServlet(lwServer,
         // lwServer.getSecureAddress().getPort())); root.addServlet(clientServletHolder, "/api/clients/*");
@@ -235,9 +238,8 @@ public class RemoteLeshanClientDemo {
         // ServiceInfo.create("_coaps._udp.local.", "leshan", secureLocalPort, "");
         // jmdns.registerService(coapSecureServiceInfo); }
 
-        // Start Jetty & Leshan
-        /*
-         * server.start(); LOG.info("Web server started at {}.", server.getURI());
-         */
+        // Start Jetty
+        server.start();
+        LOG.info("Web server started at {}.", server.getURI());
     }
 }
