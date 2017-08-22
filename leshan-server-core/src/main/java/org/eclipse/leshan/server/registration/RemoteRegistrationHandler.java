@@ -16,7 +16,6 @@
 package org.eclipse.leshan.server.registration;
 
 import java.net.InetSocketAddress;
-import java.rmi.RemoteException;
 import java.util.Date;
 
 import org.eclipse.leshan.core.request.DeregisterRequest;
@@ -69,15 +68,7 @@ public class RemoteRegistrationHandler {
         }
 
         // Add registration to the store
-        final Deregistration deregistration;
-        Deregistration tempDeregistration = null;
-
-        try {
-            tempDeregistration = registrationService.getStore().addRegistration(registration);
-        } catch (RemoteException e) {
-            LOG.error("Failed to add registration via RMI", e);
-        }
-        deregistration = tempDeregistration;
+        final Deregistration deregistration = registrationService.getStore().addRegistration(registration);
 
         // Create callback to notify new registration and de-registration
         LOG.debug("New registration: {}", registration);
@@ -101,15 +92,7 @@ public class RemoteRegistrationHandler {
     public SendableResponse<UpdateResponse> update(Identity sender, UpdateRequest updateRequest) {
 
         // We must check if the client is using the right identity.
-        final Registration registration;
-        Registration tempRegistration = null;
-
-        try {
-            tempRegistration = registrationService.getById(updateRequest.getRegistrationId());
-        } catch (RemoteException e) {
-            LOG.error("Failed to get registration by Id via RMI", e);
-        }
-        registration = tempRegistration;
+        final Registration registration = registrationService.getById(updateRequest.getRegistrationId());
 
         if (registration == null) {
             return new SendableResponse<>(UpdateResponse.notFound());
@@ -128,15 +111,7 @@ public class RemoteRegistrationHandler {
                 updateRequest.getObjectLinks());
 
         // update registration
-        final UpdatedRegistration updatedRegistration;
-        UpdatedRegistration tempUpdatedRegistration = null;
-
-        try {
-            tempUpdatedRegistration = registrationService.getStore().updateRegistration(update);
-        } catch (RemoteException e) {
-            LOG.error("Failed to update registration via RMI", e);
-        }
-        updatedRegistration = tempUpdatedRegistration;
+        final UpdatedRegistration updatedRegistration = registrationService.getStore().updateRegistration(update);
 
         if (updatedRegistration == null) {
             LOG.debug("Invalid update:  registration {} not found", registration.getId());
@@ -158,12 +133,7 @@ public class RemoteRegistrationHandler {
     public SendableResponse<DeregisterResponse> deregister(Identity sender, DeregisterRequest deregisterRequest) {
 
         // We must check if the client is using the right identity.
-        Registration registration = null;
-        try {
-            registration = registrationService.getById(deregisterRequest.getRegistrationId());
-        } catch (RemoteException e) {
-            LOG.error("Failed to get registration by Id", e);
-        }
+        Registration registration = registrationService.getById(deregisterRequest.getRegistrationId());
         if (registration == null) {
             return new SendableResponse<>(DeregisterResponse.notFound());
         }
@@ -173,16 +143,8 @@ public class RemoteRegistrationHandler {
             return new SendableResponse<>(DeregisterResponse.badRequest("forbidden"));
         }
 
-        final Deregistration deregistration;
-        Deregistration tempDeregistration = null;
-
-        try {
-            tempDeregistration = registrationService.getStore()
-                    .removeRegistration(deregisterRequest.getRegistrationId());
-        } catch (RemoteException e) {
-            LOG.error("Failed to remove registration via RMI", e);
-        }
-        deregistration = tempDeregistration;
+        final Deregistration deregistration = registrationService.getStore()
+                .removeRegistration(deregisterRequest.getRegistrationId());
 
         if (deregistration != null) {
             LOG.debug("Deregistered client: {}", deregistration.getRegistration());
